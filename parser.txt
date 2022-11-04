@@ -1,0 +1,24 @@
+-(p>(q>p)) is a negation of a propositional formula.
+(-(p>q)^q) is a binary connective propositional formula. Its left hand side is -(p>q), its connective is ^, and its right hand side is q.
+(---pv(q^-q)) is a binary connective propositional formula. Its left hand side is ---p, its connective is v, and its right hand side is (q^-q).
+(p>p) is a binary connective propositional formula. Its left hand side is p, its connective is >, and its right hand side is p.
+-(p>p) is a negation of a propositional formula.
+((pvq)^ is not a formula.
+(p-q) is not a formula.
+((pvq)^(-pv-q)) is a binary connective propositional formula. Its left hand side is (pvq), its connective is ^, and its right hand side is (-pv-q).
+(q^-(pv-p)) is a binary connective propositional formula. Its left hand side is q, its connective is ^, and its right hand side is -(pv-p).
+p is a proposition.
+((pvq)^((p>-p)^(-p>p))) is a binary connective propositional formula. Its left hand side is (pvq), its connective is ^, and its right hand side is ((p>-p)^(-p>p)).
+-----------q is a negation of a propositional formula.
+(ExP(x,x)^Ax(-P(x,x)>P(x,x))) is a binary connective first order formula. Its left hand side is ExP(x,x), its connective is ^, and its right hand side is Ax(-P(x,x)>P(x,x)).
+-Ax(P(x,x)^-P(x,x)) is a negation of a first order logic formula.
+-Ax-Ey-P(x,y) is a negation of a first order logic formula.
+ExAx(P(x,x)^-P(x,x)) is an existentially quantified formula.
+ExAy(Q(x,x)>P(y,y)) is an existentially quantified formula.
+(Q(x,x)-(P(y,y)) is not a formula.
+ExEy((Q(x,x)^Q(y,y))v-P(y,y)) is an existentially quantified formula.
+ExEy((Q(x,x)^Q(y,y))v is not a formula.
+Ex-P(x,x) is an existentially quantified formula.
+(AxEyP(x,y)^EzQ(z,z)) is a binary connective first order formula. Its left hand side is AxEyP(x,y), its connective is ^, and its right hand side is EzQ(z,z).
+(Ax(P(x,x)^-P(x,x))^ExQ(x,x)) is a binary connective first order formula. Its left hand side is Ax(P(x,x)^-P(x,x)), its connective is ^, and its right hand side is ExQ(x,x).
+ExEy(P(x,y)^Ex-P(x,y)) is an existentially quantified formula.

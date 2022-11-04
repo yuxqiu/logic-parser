@@ -1,0 +1,52 @@
+[
+ {
+  "directory": "/Users/timqiu/Documents/Code/Classes/UCL-Year2/comp0009-logic/coursework/tableau-cpp",
+  "arguments": [
+   "g++",
+   "-o",
+   "build/release/src/main.o",
+   "-c",
+   "src/main.cc",
+   "-Wall",
+   "-Werror",
+   "-Wextra",
+   "-Wpedantic",
+   "-Wextra-semi",
+   "-Wnull-dereference",
+   "-Wsuggest-override",
+   "-Wconversion",
+   "-Wshadow",
+   "-std=c++17",
+   "-O2",
+   "-Iinclude",
+   "-MMD",
+   "-MP"
+  ],
+  "file": "src/main.cc"
+ },
+ {
+  "directory": "/Users/timqiu/Documents/Code/Classes/UCL-Year2/comp0009-logic/coursework/tableau-cpp",
+  "arguments": [
+   "g++",
+   "-o",
+   "build/release/src/tokenizer.o",
+   "-c",
+   "src/tokenizer.cc",
+   "-Wall",
+   "-Werror",
+   "-Wextra",
+   "-Wpedantic",
+   "-Wextra-semi",
+   "-Wnull-dereference",
+   "-Wsuggest-override",
+   "-Wconversion",
+   "-Wshadow",
+   "-std=c++17",
+   "-O2",
+   "-Iinclude",
+   "-MMD",
+   "-MP"
+  ],
+  "file": "src/tokenizer.cc"
+ }
+]
