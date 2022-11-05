@@ -2,44 +2,34 @@
 
 #include <cstddef>
 #include <memory>
+#include <stack>
 #include <vector>
 
 #include "expr.hh"
 #include "formula.hh"
 
-// Viewer is subject to changes if the owner de-constructs before the viewer
-class FormulaViewer {
+class Formula {
 public:
-  explicit FormulaViewer(Expr *expr);
+  explicit Formula() = default;
+  explicit Formula(std::shared_ptr<Expr> expr);
+  ~Formula();
+
+  Formula(const Formula &) = default;
+  auto operator=(const Formula &) -> Formula & = delete;
+
+  Formula(Formula &&owner) noexcept = default;
+  auto operator=(Formula &&) noexcept -> Formula & = delete;
 
   [[nodiscard]] auto Type() const -> enum Expr::Type;
 
   // Description of the entire formula
   [[nodiscard]] auto Description() const -> std::string;
 
-  [[nodiscard]] auto ViewChildren() const -> std::vector<FormulaViewer>;
+  [[nodiscard]] auto ViewChildren() const -> std::vector<Formula>;
 
 protected:
-  FormulaViewer() = default;
-  Expr *expr_{};
-};
-
-class FormulaOwner {
-public:
-  FormulaOwner() = default;
-  explicit FormulaOwner(std::shared_ptr<Expr> &&expr);
-
-  FormulaOwner(const FormulaOwner &) = delete;
-  auto operator=(const FormulaOwner &) -> FormulaOwner & = delete;
-
-  FormulaOwner(FormulaOwner &&owner) noexcept = default;
-  auto operator=(FormulaOwner &&) noexcept -> FormulaOwner &;
-
-  ~FormulaOwner();
-
-  explicit operator FormulaViewer() const;
-
-private:
+  static void ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
+                         std::string &out, Expr *expr);
   void ReleaseResources();
 
   std::shared_ptr<Expr> expr_;

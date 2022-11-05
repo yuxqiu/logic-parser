@@ -40,9 +40,9 @@ const std::vector<Token> kVarPredicate = {Token{"x"}, Token{"y"}, Token{"z"},
                                           Token{"w"}};
 // Predicate Ends
 
-auto Parser::ParserOutput::Formula() -> FormulaOwner & { return formula_; }
+auto Parser::ParserOutput::Formula() -> class Formula & { return formula_; }
 
-auto Parser::ParserOutput::Formula() const -> const FormulaOwner & {
+auto Parser::ParserOutput::Formula() const -> const class Formula & {
   return formula_;
 }
 
@@ -52,11 +52,10 @@ auto Parser::ParserOutput::RawFormula() const -> const std::string & {
   return raw_formula_;
 }
 
-Parser::ParserOutput::ParserOutput(FormulaOwner &&owner,
+Parser::ParserOutput::ParserOutput(class Formula &&owner,
                                    std::string &&raw_formula,
                                    ParseResult result)
-    : formula_(std::move(owner)), raw_formula_(std::move(raw_formula)),
-      result_(result) {}
+    : formula_(owner), raw_formula_(std::move(raw_formula)), result_(result) {}
 
 auto Parser::ExprStack::Error() const -> bool { return error_; }
 
@@ -64,7 +63,7 @@ void Parser::ExprStack::SetError() { error_ = true; }
 
 Parser::ExprStack::~ExprStack() {
   while (!empty()) {
-    FormulaOwner destructed_formula{std::move(top())};
+    Formula destructed_formula{std::move(top())};
     pop();
   }
 }
@@ -273,75 +272,10 @@ auto Parser::Parse(std::string line) -> ParserOutput {
 
   if (stack.Error() || stack.size() != 1 || (proposition == predicate) ||
       !stack.top()->Complete() || stack.top()->Error()) {
-    return ParserOutput{FormulaOwner{}, std::move(line),
-                        ParseResult::kNotAFormula};
+    return ParserOutput{Formula{}, std::move(line), ParseResult::kNotAFormula};
   }
 
-  return ParserOutput{FormulaOwner{std::move(stack.top())}, std::move(line),
+  return ParserOutput{Formula{std::move(stack.top())}, std::move(line),
                       proposition ? ParseResult::kProposition
                                   : ParseResult::kPredicate};
-}
-
-void Parser::PrintInformation(std::ostream &out,
-                              const ParserOutput &parser_out) {
-  const ParseResult result = parser_out.Result();
-  const std::string &line = parser_out.RawFormula();
-  const FormulaViewer formula =
-      static_cast<FormulaViewer>(parser_out.Formula());
-
-  if (result == ParseResult::kNotAFormula) {
-    out << line << " is not a formula." << std::endl;
-    return;
-  }
-
-  if (result == ParseResult::kProposition) {
-    if (Expr::IsLiteral(formula.Type())) {
-      out << line << " is a proposition." << std::endl;
-      return;
-    }
-    if (Expr::IsUnary(formula.Type())) {
-      out << line << " is a negation of a propositional formula." << std::endl;
-      return;
-    }
-    if (Expr::IsBinary(formula.Type())) {
-      out << line << " is a binary connective propositional formula. ";
-      std::vector children = formula.ViewChildren();
-      assert(children.size() == 2);
-      out << "Its left hand side is " << children[0].Description();
-      out << ", its connective is " << formula.Type();
-      out << ", and its right hand side is " << children[1].Description();
-      out << "." << std::endl;
-      return;
-    }
-  }
-
-  if (result == ParseResult::kPredicate) {
-    if (Expr::IsLiteral(formula.Type())) {
-      out << line << " is an atom." << std::endl;
-      return;
-    }
-    if (formula.Type() == Expr::Type::kNeg) {
-      out << line << " is a negation of a first order logic formula."
-          << std::endl;
-      return;
-    }
-    if (formula.Type() == Expr::Type::kUniversal) {
-      out << line << " is a universally quantified formula." << std::endl;
-      return;
-    }
-    if (formula.Type() == Expr::Type::kExist) {
-      out << line << " is an existentially quantified formula." << std::endl;
-      return;
-    }
-    if (Expr::IsBinary(formula.Type())) {
-      out << line << " is a binary connective first order formula. ";
-      std::vector children = formula.ViewChildren();
-      assert(children.size() == 2);
-      out << "Its left hand side is " << children[0].Description();
-      out << ", its connective is " << formula.Type();
-      out << ", and its right hand side is " << children[1].Description();
-      out << "." << std::endl;
-      return;
-    }
-  }
 }

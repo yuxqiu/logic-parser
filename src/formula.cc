@@ -1,56 +1,77 @@
-#include <memory>
-#include <queue>
-#include <vector>
+#include <cstddef>
+#include <deque>
+#include <utility>
 
 #include "expr.hh"
 #include "formula.hh"
 
-FormulaViewer::FormulaViewer(Expr *expr) : expr_{expr} {}
+Formula::Formula(std::shared_ptr<Expr> expr) : expr_{std::move(expr)} {}
 
-auto FormulaViewer::Type() const -> enum Expr::Type { return expr_->Type(); }
+auto Formula::Type() const -> enum Expr::Type { return expr_->Type(); }
 
-auto FormulaViewer::Description() const -> std::string {
-  return expr_->Description();
+void Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
+                         std::string &out, Expr *expr) {
+  while (expr != nullptr) {
+    expr->Description(out, 0);
+    stack.emplace(expr, 1);
+    switch (expr->ChildrenSize()) {
+    case 0:
+      expr = nullptr;
+      break;
+    case 1:
+      [[fallthrough]];
+    case 2:
+      expr = expr->ViewChildren()[0].get();
+    }
+  }
 }
 
-auto FormulaViewer::ViewChildren() const -> std::vector<FormulaViewer> {
+auto Formula::Description() const -> std::string {
+  // Expr*, uint64_t pair => uint64_t stores number of children visited
+  std::stack<std::pair<Expr *, uint64_t>> stack;
+  std::string out;
+
+  ExpandLeft(stack, out, expr_.get());
+  while (!stack.empty()) {
+    auto &[expr, num] = stack.top();
+
+    if (num >= expr->ChildrenSize()) {
+      expr->Description(out, num);
+      stack.pop();
+      continue;
+    }
+
+    expr->Description(out, num);
+    ExpandLeft(stack, out, expr->ViewChildren()[num].get());
+    ++num;
+  }
+
+  return out;
+}
+
+auto Formula::ViewChildren() const -> std::vector<Formula> {
   std::vector children = expr_->ViewChildren();
-  std::vector<FormulaViewer> ret;
+  std::vector<Formula> ret;
   ret.reserve(children.size());
   for (auto &expr : children) {
-    ret.emplace_back(expr.get());
+    ret.emplace_back(expr);
   }
   return ret;
 }
 
-FormulaOwner::FormulaOwner(std::shared_ptr<Expr> &&expr)
-    : expr_(std::move(expr)) {}
-
-void FormulaOwner::ReleaseResources() {
-  std::queue<std::shared_ptr<Expr>> destruct_queue;
-  destruct_queue.emplace(std::move(expr_));
+void Formula::ReleaseResources() {
+  std::deque<std::shared_ptr<Expr>> destruct_queue;
+  destruct_queue.emplace_back(std::move(expr_));
   while (!destruct_queue.empty()) {
     auto front = std::move(destruct_queue.front());
-    destruct_queue.pop();
-    if (front) {
+    destruct_queue.pop_front();
+    if (front.use_count() == 1) {
       auto children = front->TakeChildren();
       for (std::shared_ptr<Expr> &expr : children) {
-        destruct_queue.emplace(std::move(expr));
+        destruct_queue.emplace_back(std::move(expr));
       }
     }
   }
 }
 
-FormulaOwner::~FormulaOwner() { ReleaseResources(); }
-
-auto FormulaOwner::operator=(FormulaOwner &&owner) noexcept -> FormulaOwner & {
-  if (this != &owner) {
-    ReleaseResources();
-    expr_ = std::move(owner.expr_);
-  }
-  return *this;
-}
-
-FormulaOwner::operator FormulaViewer() const {
-  return FormulaViewer{expr_.get()};
-}
+Formula::~Formula() { ReleaseResources(); }

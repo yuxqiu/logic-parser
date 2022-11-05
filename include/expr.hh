@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <ostream>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -14,13 +13,13 @@ public:
   // The ordering here is important as it helps us sort the Expr
   enum class Type {
     kNull,
+    kLiteral,
     kNeg,       // for any formula
     kAnd,       // alpha formula
     kExist,     // delta formula
     kOr,        // beta formula
     kImpl,      // beta formula
     kUniversal, // gamma formula
-    kLiteral,
   };
 
   [[nodiscard]] auto Type() const -> Type;
@@ -42,22 +41,24 @@ public:
 
   [[nodiscard]] virtual auto Complete() const -> bool = 0;
 
-  [[nodiscard]] virtual auto Description() const -> std::string = 0;
-
 protected:
   enum Type type_ { Type::kNull };
   bool error_{false};
 
 private:
+  [[nodiscard]] auto ChildrenSize() const -> uint64_t;
   [[nodiscard]] virtual auto TakeChildren()
       -> std::vector<std::shared_ptr<Expr>> = 0;
   [[nodiscard]] virtual auto ViewChildren() const
       -> std::vector<std::shared_ptr<Expr>> = 0;
 
-  friend auto operator<(const Expr &lhs, const Expr &rhs) -> bool;
+  virtual void Description(std::string &out, uint64_t num) const = 0;
 
-  friend class FormulaViewer;
-  friend class FormulaOwner;
+  friend auto operator<(const Expr &lhs, const Expr &rhs) -> bool;
+  friend auto operator<<(std::ostream &out, enum Expr::Type type)
+      -> std::ostream &;
+
+  friend class Formula;
 };
 
 auto operator<(const Expr &lhs, const Expr &rhs) -> bool;
@@ -78,7 +79,8 @@ public:
   // [[nodiscard]] auto Expand(const std::set<Constant> &constants)
   //     -> std::vector<std::vector<Formula>> override;
 
-  [[nodiscard]] auto Description() const -> std::string override;
+protected:
+  Token val_;
 
 private:
   [[nodiscard]] auto TakeChildren()
@@ -86,7 +88,7 @@ private:
   [[nodiscard]] auto ViewChildren() const
       -> std::vector<std::shared_ptr<Expr>> override;
 
-  Token val_;
+  void Description(std::string &out, uint64_t num) const override;
 };
 
 class PredicateLiteral : public Literal {
@@ -94,9 +96,9 @@ public:
   explicit PredicateLiteral(Token val, Token left_var_, Token right_var_);
   ~PredicateLiteral() override = default;
 
-  [[nodiscard]] auto Description() const -> std::string override;
-
 private:
+  void Description(std::string &out, uint64_t num) const override;
+
   Token left_var_, right_var_;
 };
 
@@ -113,7 +115,8 @@ public:
   // [[nodiscard]] auto Expand(const std::set<Constant> &constants)
   //     -> std::vector<std::vector<Formula>> override;
 
-  [[nodiscard]] auto Description() const -> std::string override;
+protected:
+  std::shared_ptr<Expr> expr_{};
 
 private:
   [[nodiscard]] auto TakeChildren()
@@ -121,7 +124,7 @@ private:
   [[nodiscard]] auto ViewChildren() const
       -> std::vector<std::shared_ptr<Expr>> override;
 
-  std::shared_ptr<Expr> expr_{};
+  void Description(std::string &out, uint64_t num) const override;
 };
 
 // A Special UnaryExpr Expx where E is a quantifier
@@ -134,9 +137,9 @@ public:
   // [[nodiscard]] auto Expand(const std::set<Constant> &constants)
   //     -> std::vector<std::vector<Formula>> override;
 
-  [[nodiscard]] auto Description() const -> std::string override;
-
 private:
+  void Description(std::string &out, uint64_t num) const override;
+
   Token var_;
 };
 
@@ -152,13 +155,13 @@ public:
   // [[nodiscard]] auto Expand(const std::set<Constant> &constants)
   //     -> std::vector<std::vector<Formula>> override;
 
-  [[nodiscard]] auto Description() const -> std::string override;
-
 private:
   [[nodiscard]] auto TakeChildren()
       -> std::vector<std::shared_ptr<Expr>> override;
   [[nodiscard]] auto ViewChildren() const
       -> std::vector<std::shared_ptr<Expr>> override;
+
+  void Description(std::string &out, uint64_t num) const override;
 
   std::shared_ptr<Expr> expr_lhs_{}, expr_rhs_{};
 };

@@ -1,6 +1,5 @@
 #include <cassert>
 #include <memory>
-#include <ostream>
 #include <string>
 
 #include "expr.hh"
@@ -11,6 +10,21 @@ auto Expr::Error() const -> bool { return error_; }
 void Expr::SetError() { error_ = true; }
 
 auto Expr::Type() const -> enum Type { return type_; }
+
+auto Expr::ChildrenSize() const -> uint64_t {
+  if (IsLiteral(type_)) {
+    return 0;
+  }
+  if (IsUnary(type_)) {
+    return 1;
+  }
+  if (IsBinary(type_)) {
+    return 2;
+  }
+
+  assert(false);
+  return 0;
+}
 
 auto Expr::IsLiteral(enum Expr::Type type) -> bool {
   return type == Expr::Type::kLiteral;
@@ -44,7 +58,6 @@ auto operator<<(std::ostream &out, enum Expr::Type type) -> std::ostream & {
   default:
     assert(false);
   }
-
   return out;
 }
 
@@ -70,17 +83,23 @@ void Literal::Append(enum Type type) {
   return {};
 }
 
-[[nodiscard]] auto Literal::Complete() const -> bool { return true; }
+void Literal::Description(std::string &out, uint64_t num) const {
+  if (num == 0) {
+    out += val_.ToString();
+  }
+}
 
-auto Literal::Description() const -> std::string { return val_.ToString(); }
+[[nodiscard]] auto Literal::Complete() const -> bool { return true; }
 
 PredicateLiteral::PredicateLiteral(Token val, Token left, Token right)
     : Literal(std::move(val)), left_var_(std::move(left)),
       right_var_(std::move(right)) {}
 
-auto PredicateLiteral::Description() const -> std::string {
-  return Literal::Description() + "(" + left_var_.ToString() + "," +
-         right_var_.ToString() + ")";
+void PredicateLiteral::Description(std::string &out, uint64_t num) const {
+  if (num == 0) {
+    out += val_.ToString() + "(" + left_var_.ToString() + "," +
+           right_var_.ToString() + ")";
+  }
 }
 
 UnaryExpr::UnaryExpr(enum Type type) {
@@ -115,41 +134,28 @@ void UnaryExpr::Append(enum Type type) {
   return {expr_};
 }
 
-[[nodiscard]] auto UnaryExpr::Complete() const -> bool {
-  return type_ != Type::kNull && expr_;
+void UnaryExpr::Description(std::string &out, uint64_t num) const {
+  if (num == 0) {
+    out += "-";
+  }
 }
 
-auto UnaryExpr::Description() const -> std::string {
-  switch (type_) {
-  case Expr::Type::kNeg:
-    return "-" + expr_->Description();
-  case Expr::Type::kExist:
-    [[fallthrough]];
-  case Expr::Type::kUniversal:
-    return expr_->Description();
-  default:
-    break;
-  }
-
-  assert(false);
-  return "Unreachable";
+[[nodiscard]] auto UnaryExpr::Complete() const -> bool {
+  return type_ != Type::kNull && expr_;
 }
 
 QuantifiedUnaryExpr::QuantifiedUnaryExpr(enum Type type, Token var)
     : UnaryExpr(type), var_(std::move(var)) {}
 
-auto QuantifiedUnaryExpr::Description() const -> std::string {
-  switch (type_) {
-  case Expr::Type::kExist:
-    return "E" + var_.ToString() + UnaryExpr::Description();
-  case Expr::Type::kUniversal:
-    return "A" + var_.ToString() + UnaryExpr::Description();
-  default:
-    break;
+void QuantifiedUnaryExpr::Description(std::string &out, uint64_t num) const {
+  if (num == 0) {
+    if (type_ == Expr::Type::kExist) {
+      out += "E";
+    } else if (type_ == Expr::Type::kUniversal) {
+      out += "A";
+    }
+    out += var_.ToString();
   }
-
-  assert(false);
-  return "Unreachable";
 }
 
 void BinaryExpr::Append(std::shared_ptr<Expr> expr) {
@@ -198,21 +204,18 @@ void BinaryExpr::Append(enum Type type) {
   return type_ != Type::kNull && expr_lhs_ && expr_rhs_;
 }
 
-auto BinaryExpr::Description() const -> std::string {
-  switch (type_) {
-  case Expr::Type::kAnd:
-    return "(" + expr_lhs_->Description() + "^" + expr_rhs_->Description() +
-           ")";
-  case Expr::Type::kOr:
-    return "(" + expr_lhs_->Description() + "v" + expr_rhs_->Description() +
-           ")";
-  case Expr::Type::kImpl:
-    return "(" + expr_lhs_->Description() + ">" + expr_rhs_->Description() +
-           ")";
-  default:
-    break;
+void BinaryExpr::Description(std::string &out, uint64_t num) const {
+  if (num == 0) {
+    out += "(";
+  } else if (num == 1) {
+    if (type_ == Expr::Type::kAnd) {
+      out += "^";
+    } else if (type_ == Expr::Type::kOr) {
+      out += "v";
+    } else if (type_ == Expr::Type::kImpl) {
+      out += ">";
+    }
+  } else if (num == 2) {
+    out += ")";
   }
-
-  assert(false);
-  return "Unreachable";
 }

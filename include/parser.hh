@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <memory>
 #include <stack>
 
@@ -13,24 +12,21 @@ public:
 
   class ParserOutput {
   public:
-    explicit ParserOutput(FormulaOwner &&owner, std::string &&raw_formula,
+    explicit ParserOutput(Formula &&owner, std::string &&raw_formula,
                           ParseResult result);
 
-    [[nodiscard]] auto Formula() -> FormulaOwner &;
-    [[nodiscard]] auto Formula() const -> const FormulaOwner &;
+    [[nodiscard]] auto Formula() -> Formula &;
+    [[nodiscard]] auto Formula() const -> const class Formula &;
     [[nodiscard]] auto Result() const -> ParseResult;
     [[nodiscard]] auto RawFormula() const -> const std::string &;
 
   private:
-    FormulaOwner formula_;
+    class Formula formula_;
     std::string raw_formula_;
     enum ParseResult result_;
   };
 
   [[nodiscard]] static auto Parse(std::string line) -> ParserOutput;
-
-  static void PrintInformation(std::ostream &out,
-                               const ParserOutput &parser_out);
 
 private:
   class ExprStack : public std::stack<std::shared_ptr<Expr>> {

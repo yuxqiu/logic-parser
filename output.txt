@@ -1,0 +1,48 @@
+-(p>(q>p)) is a negation of a propositional formula.
+-(p>(q>p)) is not satisfiable.
+(-(p>q)^q) is a binary connective propositional formula. Its left hand side is -(p>q), its connective is ^, and its right hand side is q.
+(-(p>q)^q) is not satisfiable.
+(---pv(q^-q)) is a binary connective propositional formula. Its left hand side is ---p, its connective is v, and its right hand side is (q^-q).
+(---pv(q^-q)) is satisfiable.
+(p>p) is a binary connective propositional formula. Its left hand side is p, its connective is >, and its right hand side is p.
+(p>p) is satisfiable.
+-(p>p) is a negation of a propositional formula.
+-(p>p) is not satisfiable.
+((pvq)^ is not a formula.
+((pvq)^ is not a formula.
+(p-q) is not a formula.
+(p-q) is not a formula.
+((pvq)^(-pv-q)) is a binary connective propositional formula. Its left hand side is (pvq), its connective is ^, and its right hand side is (-pv-q).
+((pvq)^(-pv-q)) is satisfiable.
+(q^-(pv-p)) is a binary connective propositional formula. Its left hand side is q, its connective is ^, and its right hand side is -(pv-p).
+(q^-(pv-p)) is not satisfiable.
+p is a proposition.
+p is satisfiable.
+((pvq)^((p>-p)^(-p>p))) is a binary connective propositional formula. Its left hand side is (pvq), its connective is ^, and its right hand side is ((p>-p)^(-p>p)).
+((pvq)^((p>-p)^(-p>p))) is not satisfiable.
+-----------q is a negation of a propositional formula.
+-----------q is satisfiable.
+(ExP(x,x)^Ax(-P(x,x)>P(x,x))) is a binary connective first order formula. Its left hand side is ExP(x,x), its connective is ^, and its right hand side is Ax(-P(x,x)>P(x,x)).
+(ExP(x,x)^Ax(-P(x,x)>P(x,x))) is satisfiable.
+-Ax(P(x,x)^-P(x,x)) is a negation of a first order logic formula.
+-Ax(P(x,x)^-P(x,x)) is satisfiable.
+-Ax-Ey-P(x,y) is a negation of a first order logic formula.
+-Ax-Ey-P(x,y) is satisfiable.
+ExAx(P(x,x)^-P(x,x)) is an existentially quantified formula.
+ExAx(P(x,x)^-P(x,x)) is not satisfiable.
+ExAy(Q(x,x)>P(y,y)) is an existentially quantified formula.
+ExAy(Q(x,x)>P(y,y)) is satisfiable.
+(Q(x,x)-(P(y,y)) is not a formula.
+(Q(x,x)-(P(y,y)) is not a formula.
+ExEy((Q(x,x)^Q(y,y))v-P(y,y)) is an existentially quantified formula.
+ExEy((Q(x,x)^Q(y,y))v-P(y,y)) is satisfiable.
+ExEy((Q(x,x)^Q(y,y))v is not a formula.
+ExEy((Q(x,x)^Q(y,y))v is not a formula.
+Ex-P(x,x) is an existentially quantified formula.
+Ex-P(x,x) is satisfiable.
+(AxEyP(x,y)^EzQ(z,z)) is a binary connective first order formula. Its left hand side is AxEyP(x,y), its connective is ^, and its right hand side is EzQ(z,z).
+(AxEyP(x,y)^EzQ(z,z)) may or may not be satisfiable.
+(Ax(P(x,x)^-P(x,x))^ExQ(x,x)) is a binary connective first order formula. Its left hand side is Ax(P(x,x)^-P(x,x)), its connective is ^, and its right hand side is ExQ(x,x).
+(Ax(P(x,x)^-P(x,x))^ExQ(x,x)) is not satisfiable.
+ExEy(P(x,y)^Ex-P(x,y)) is an existentially quantified formula.
+ExEy(P(x,y)^Ex-P(x,y)) is satisfiable.
