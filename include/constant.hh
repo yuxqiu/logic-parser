@@ -1,15 +1,21 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
+#include <vector>
 
-class Constant {
+#include "tokenizer.hh"
+
+class ConstantManager {
 public:
-  explicit Constant(uint64_t constant);
+  // If number is >= generated_constants_.size() or is >= klimit
+  // return nullopt
+  [[nodiscard]] auto GetConsts(uint64_t num) const -> std::optional<Token>;
+
+  // If we can add more const
+  [[nodiscard]] auto CanAddConst() const -> bool;
 
 private:
-  uint64_t constant_;
-
-  friend auto operator<(const Constant &lhs, const Constant &rhs) -> bool;
+  std::vector<Token> generated_constants_{};
+  constexpr static uint64_t kLimit{10};
 };
-
-auto operator<(const Constant &lhs, const Constant &rhs) -> bool;

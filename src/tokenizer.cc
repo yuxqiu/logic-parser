@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <string>
 #include <utility>
 
@@ -6,6 +7,12 @@
 Token::Token(std::string token) : token_{std::move(token)} {}
 
 auto Token::ToString() const -> std::string { return token_; }
+
+namespace std {
+auto hash<Token>::operator()(const Token &token) const -> size_t {
+  return hash<std::string>()(token.ToString());
+}
+} // namespace std
 
 Tokenizer::Tokenizer(std::string expr) : expr_{std::move(expr)} {
   ConsumeWhitespace();

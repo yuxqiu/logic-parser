@@ -1,11 +1,14 @@
 #include <fstream>
 #include <iostream>
+#include <ostream>
+#include <sstream>
 #include <string>
 
 #include "parser.hh"
+#include "tableau.hh"
 
-void PrintInformation(std::ostream &out,
-                      const Parser::ParserOutput &parser_out) {
+void PrintParserInformation(std::ostream &out,
+                            const Parser::ParserOutput &parser_out) {
   const Parser::ParseResult result = parser_out.Result();
   const std::string &line = parser_out.RawFormula();
   const Formula &formula = parser_out.Formula();
@@ -67,17 +70,68 @@ void PrintInformation(std::ostream &out,
   }
 }
 
-auto main() -> int {
-  std::ifstream file{"input.txt"};
+void PrintTableauInformation(std::ostream &out,
+                             const Parser::ParserOutput &parser_out,
+                             const Tableau::TableauResult &tableau_out) {
+  switch (tableau_out) {
+  case Tableau::TableauResult::kUnsatisfiable:
+    out << parser_out.RawFormula() << " is not satisfiable." << std::endl;
+    break;
+  case Tableau::TableauResult::kSatisfiable:
+    out << parser_out.RawFormula() << " is satisfiable." << std::endl;
+    break;
+  case Tableau::TableauResult::kUndecidable:
+    out << parser_out.RawFormula() << " may or may not be satisfiable."
+        << std::endl;
+    break;
+  }
+}
+
+auto main(int argc, char *argv[]) -> int {
+  if (argc != 2) {
+    std::cout << "Usage: ./" << argv[0] << " filename" << std::endl;
+    return 0;
+  }
+
+  std::ifstream file{argv[1]};
   if (!file) {
     std::cerr << "Failed to open the file" << std::endl;
     return 1;
   }
 
+  bool parse{false};
+  bool solve{false};
+
   std::string line;
+  if (std::getline(file, line)) {
+    std::stringstream iss(line);
+    std::string word;
+    while (iss >> word) {
+      if (word == "PARSE") {
+        parse = true;
+      } else if (word == "SAT") {
+        solve = true;
+      } else {
+        std::cerr << "Unknown Command" << std::endl;
+      }
+    }
+  }
+
+  if (!parse) {
+    return 0;
+  }
+
   while (std::getline(file, line)) {
-    auto result = Parser::Parse(line);
-    PrintInformation(std::cout, result);
+    auto parse_out = Parser::Parse(line);
+    PrintParserInformation(std::cout, parse_out);
+    if (solve) {
+      if (parse_out.Result() == Parser::ParseResult::kNotAFormula) {
+        PrintParserInformation(std::cout, parse_out);
+        continue;
+      }
+      auto tableau_result = Tableau::Solve(parse_out);
+      PrintTableauInformation(std::cout, parse_out, tableau_result);
+    }
   }
   return 0;
 }

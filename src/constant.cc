@@ -1,7 +1,13 @@
 #include "constant.hh"
+#include <optional>
 
-Constant::Constant(uint64_t constant) : constant_{constant} {}
+auto ConstantManager::GetConsts(uint64_t num) const -> std::optional<Token> {
+  if (num >= kLimit || num >= generated_constants_.size()) {
+    return {};
+  }
+  return generated_constants_[num];
+}
 
-auto operator<(const Constant &lhs, const Constant &rhs) -> bool {
-  return lhs.constant_ < rhs.constant_;
+auto ConstantManager::CanAddConst() const -> bool {
+  return generated_constants_.size() < kLimit;
 }

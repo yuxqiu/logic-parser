@@ -1,3 +1,4 @@
+PARSE SAT
 -(p>(q>p))
 (-(p>q)^q)
 (---pv(q^-q))

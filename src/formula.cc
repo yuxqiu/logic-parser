@@ -12,7 +12,7 @@ auto Formula::Type() const -> enum Expr::Type { return expr_->Type(); }
 void Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
                          std::string &out, Expr *expr) {
   while (expr != nullptr) {
-    expr->Description(out, 0);
+    Expr::Description(expr, out, 0);
     stack.emplace(expr, 1);
     switch (expr->ChildrenSize()) {
     case 0:
@@ -36,18 +36,20 @@ auto Formula::Description() const -> std::string {
     auto &[expr, num] = stack.top();
 
     if (num >= expr->ChildrenSize()) {
-      expr->Description(out, num);
+      Expr::Description(expr, out, num);
       stack.pop();
       continue;
     }
 
-    expr->Description(out, num);
+    Expr::Description(expr, out, num);
     ExpandLeft(stack, out, expr->ViewChildren()[num].get());
     ++num;
   }
 
   return out;
 }
+
+auto Formula::Infos() const -> std::vector<Token> { return expr_->Infos(); }
 
 auto Formula::ViewChildren() const -> std::vector<Formula> {
   std::vector children = expr_->ViewChildren();
@@ -59,6 +61,23 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
   return ret;
 }
 
+auto Formula::Expand() const -> std::vector<std::vector<Formula>> {
+  std::vector expansion = Expr::Expand(expr_);
+  std::vector<std::vector<Formula>> ret;
+  ret.reserve(expansion.size());
+
+  for (auto &one_expansion : expansion) {
+    std::vector<Formula> formulas;
+    formulas.reserve(one_expansion.size());
+    for (auto &new_formula : one_expansion) {
+      formulas.emplace_back(std::move(new_formula));
+    }
+    ret.emplace_back(std::move(formulas));
+  }
+
+  return ret;
+}
+
 void Formula::ReleaseResources() {
   std::deque<std::shared_ptr<Expr>> destruct_queue;
   destruct_queue.emplace_back(std::move(expr_));
@@ -66,7 +85,7 @@ void Formula::ReleaseResources() {
     auto front = std::move(destruct_queue.front());
     destruct_queue.pop_front();
     if (front.use_count() == 1) {
-      auto children = front->TakeChildren();
+      auto children = front->ViewChildren();
       for (std::shared_ptr<Expr> &expr : children) {
         destruct_queue.emplace_back(std::move(expr));
       }
@@ -75,3 +94,7 @@ void Formula::ReleaseResources() {
 }
 
 Formula::~Formula() { ReleaseResources(); }
+
+auto operator<(const Formula &lhs, const Formula &rhs) -> bool {
+  return lhs.Type() < rhs.Type();
+}

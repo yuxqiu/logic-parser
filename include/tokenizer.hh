@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
 
 class Token {
@@ -13,6 +14,12 @@ private:
   friend auto operator<(const Token &lhs, const Token &rhs) -> bool;
   friend auto operator==(const Token &lhs, const Token &rhs) -> bool;
 };
+
+namespace std {
+template <> struct hash<Token> {
+  auto operator()(const Token &token) const -> size_t;
+};
+} // namespace std
 
 auto operator<(const Token &lhs, const Token &rhs) -> bool;
 auto operator==(const Token &lhs, const Token &rhs) -> bool;
