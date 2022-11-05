@@ -1,0 +1,8 @@
+PARSE SAT
+-(p>p)
+-(pv-p)
+-((p>q)>(p>(qvr)))
+-(((p>r)^(q>r))>((pvq)>r))
+-(((pvq)>r)>((p>r)^(q>r)))
+-((p>q)>((q>r)>(p>r)))
+-(((p^q)>r)>((p>r)v(q>r)))
