@@ -1,9 +1,13 @@
-#include "exprs/exprs.hh"
-#include "exprs/binary.hh"
-#include "exprs/unary.hh"
 #include <cassert>
 #include <memory>
 #include <string>
+#include <vector>
+
+#include "constant.hh"
+#include "exprs/binary.hh"
+#include "exprs/exprs.hh"
+#include "exprs/literal.hh"
+#include "exprs/unary.hh"
 
 auto Expr::Error() const -> bool { return error_; }
 
@@ -75,8 +79,74 @@ auto operator<<(std::ostream &out, enum Expr::Type type) -> std::ostream & {
   return out;
 }
 
-[[nodiscard]] auto Expr::Expand(const std::shared_ptr<Expr> &expr)
+static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
+                           const Token &dst) -> std::shared_ptr<Expr> {
+  std::vector<std::shared_ptr<Expr>> flatten{{}, expr};
+  std::vector<uint64_t> parents{0, 0};
+  std::vector<std::vector<std::shared_ptr<Expr>>> to_merge{{}, {}};
+
+  // Flatten the AST
+  for (std::vector<std::vector<Expr>>::size_type i = 1; i < flatten.size();
+       ++i) {
+    if ((flatten[i]->Type() == Expr::Type::kExist ||
+         flatten[i]->Type() == Expr::Type::kUniversal) &&
+        flatten[i]->Infos()[0] == src) {
+      // If var is bounded by new quantifier, store it to to_merge directly
+      // we will then merge it by checking the same condition
+      to_merge[i].emplace_back(expr);
+      continue;
+    }
+    auto children = flatten[i]->ViewChildren();
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+      flatten.emplace_back(*it);
+      parents.emplace_back(i);
+      to_merge.emplace_back();
+    }
+  }
+
+  assert(to_merge.size() == flatten.size());
+
+  // Merge back all the changes
+  for (auto i = to_merge.size() - 1; i > 0; --i) {
+    if (flatten[i]->Type() == Expr::Type::kLiteral) {
+      auto infos = flatten[i]->Infos();
+      assert(infos.size() == 3);
+      if (infos[1] == src) {
+        infos[1] = dst;
+      }
+      if (infos[2] == src) {
+        infos[2] = dst;
+      }
+      to_merge[parents[i]].emplace_back(std::make_shared<PredicateLiteral>(
+          std::move(infos[0]), std::move(infos[1]), std::move(infos[2])));
+    } else if (Expr::IsBinary(flatten[i]->Type())) {
+      to_merge[parents[i]].emplace_back(std::make_shared<BinaryExpr>(
+          flatten[i]->Type(), std::move(to_merge[i][0]),
+          std::move(to_merge[i][1])));
+    } else if (flatten[i]->Type() == Expr::Type::kExist ||
+               flatten[i]->Type() == Expr::Type::kUniversal) {
+      if (flatten[i]->Infos()[0] == src) {
+        to_merge[parents[i]].emplace_back(std::move(to_merge[i][0]));
+      } else {
+        to_merge[parents[i]].emplace_back(std::make_shared<QuantifiedUnaryExpr>(
+            flatten[i]->Type(), std::move(flatten[i]->Infos()[0]),
+            std::move(to_merge[i][0])));
+      }
+    } else if (flatten[i]->Type() == Expr::Type::kNeg) {
+      to_merge[parents[i]].emplace_back(std::make_shared<UnaryExpr>(
+          flatten[i]->Type(), std::move(to_merge[i][0])));
+    } else {
+      assert(false);
+    }
+  }
+
+  return std::move(to_merge[0][0]);
+}
+
+[[nodiscard]] auto Expr::Expand(const std::shared_ptr<Expr> &expr,
+                                const Token &token)
     -> std::vector<std::vector<std::shared_ptr<Expr>>> {
+  (void)token;
   if (expr->Type() == Expr::Type::kAnd) {
     return {expr->ViewChildren()};
   }
@@ -87,11 +157,9 @@ auto operator<<(std::ostream &out, enum Expr::Type type) -> std::ostream & {
     return {{std::make_shared<UnaryExpr>(Type::kNeg, expr->ViewChildren()[0])},
             {expr->ViewChildren()[1]}};
   }
-  if (expr->Type() == Expr::Type::kExist) {
-    return {};
-  }
-  if (expr->Type() == Expr::Type::kUniversal) {
-    return {};
+  if (expr->Type() == Expr::Type::kExist ||
+      expr->Type() == Expr::Type::kUniversal) {
+    return {{CopyAndReplace(expr->Infos()[0], expr->ViewChildren()[0], token)}};
   }
   if (expr->Type() == Type::kNeg) {
     std::shared_ptr<Expr> children = expr->ViewChildren()[0];

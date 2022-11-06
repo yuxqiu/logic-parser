@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "constant.hh"
 #include "tokenizer.hh"
 
 class Expr {
@@ -30,11 +31,11 @@ public:
 
   // 1. Number of branches
   // 2. Number of children
-  [[nodiscard]] static auto Expand(const std::shared_ptr<Expr> &expr)
+  [[nodiscard]] static auto Expand(const std::shared_ptr<Expr> &expr,
+                                   const Token &token)
       -> std::vector<std::vector<std::shared_ptr<Expr>>>;
 
-  static void Description(const Expr *expr, std::string &out,
-                          uint64_t num);
+  static void Description(const Expr *expr, std::string &out, uint64_t num);
 
   [[nodiscard]] auto Error() const -> bool;
   void SetError();

@@ -5,6 +5,7 @@
 
 class Token {
 public:
+  explicit Token() = default;
   explicit Token(std::string token);
   [[nodiscard]] auto ToString() const -> std::string;
 

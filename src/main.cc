@@ -10,7 +10,7 @@
 void PrintParserInformation(std::ostream &out,
                             const Parser::ParserOutput &parser_out) {
   const Parser::ParseResult result = parser_out.Result();
-  const std::string &line = parser_out.RawFormula();
+  const std::string &line = parser_out.Formula().Description();
   const Formula &formula = parser_out.Formula();
 
   if (result == Parser::ParseResult::kNotAFormula) {
@@ -73,16 +73,16 @@ void PrintParserInformation(std::ostream &out,
 void PrintTableauInformation(std::ostream &out,
                              const Parser::ParserOutput &parser_out,
                              const Tableau::TableauResult &tableau_out) {
+  const std::string &line = parser_out.Formula().Description();
   switch (tableau_out) {
   case Tableau::TableauResult::kUnsatisfiable:
-    out << parser_out.RawFormula() << " is not satisfiable." << std::endl;
+    out << line << " is not satisfiable." << std::endl;
     break;
   case Tableau::TableauResult::kSatisfiable:
-    out << parser_out.RawFormula() << " is satisfiable." << std::endl;
+    out << line << " is satisfiable." << std::endl;
     break;
   case Tableau::TableauResult::kUndecidable:
-    out << parser_out.RawFormula() << " may or may not be satisfiable."
-        << std::endl;
+    out << line << " may or may not be satisfiable." << std::endl;
     break;
   }
 }

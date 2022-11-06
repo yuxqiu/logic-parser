@@ -61,23 +61,6 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
   return ret;
 }
 
-auto Formula::Expand() const -> std::vector<std::vector<Formula>> {
-  std::vector expansion = Expr::Expand(expr_);
-  std::vector<std::vector<Formula>> ret;
-  ret.reserve(expansion.size());
-
-  for (auto &one_expansion : expansion) {
-    std::vector<Formula> formulas;
-    formulas.reserve(one_expansion.size());
-    for (auto &new_formula : one_expansion) {
-      formulas.emplace_back(std::move(new_formula));
-    }
-    ret.emplace_back(std::move(formulas));
-  }
-
-  return ret;
-}
-
 void Formula::ReleaseResources() {
   std::deque<std::shared_ptr<Expr>> destruct_queue;
   destruct_queue.emplace_back(std::move(expr_));
@@ -95,6 +78,6 @@ void Formula::ReleaseResources() {
 
 Formula::~Formula() { ReleaseResources(); }
 
-auto operator<(const Formula &lhs, const Formula &rhs) -> bool {
-  return lhs.Type() < rhs.Type();
+auto operator>(const Formula &lhs, const Formula &rhs) -> bool {
+  return lhs.Type() > rhs.Type();
 }

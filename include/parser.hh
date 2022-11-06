@@ -12,17 +12,14 @@ public:
 
   class ParserOutput {
   public:
-    explicit ParserOutput(Formula &&owner, std::string &&raw_formula,
-                          ParseResult result);
+    explicit ParserOutput(Formula &&owner, ParseResult result);
 
     [[nodiscard]] auto Formula() -> Formula &;
     [[nodiscard]] auto Formula() const -> const class Formula &;
     [[nodiscard]] auto Result() const -> ParseResult;
-    [[nodiscard]] auto RawFormula() const -> const std::string &;
 
   private:
     class Formula formula_;
-    std::string raw_formula_;
     enum ParseResult result_;
   };
 

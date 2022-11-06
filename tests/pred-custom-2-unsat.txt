@@ -1,13 +1,3 @@
 PARSE SAT
-(ExP(x,x)^Ax(-P(x,x)>P(x,x)))
--Ax(P(x,x)^-P(x,x))
--Ax-Ey-P(x,y)
-ExAx(P(x,x)^-P(x,x))
-ExAy(Q(x,x)>P(y,y))
-(Q(x,x)-(P(y,y))
-ExEy((Q(x,x)^Q(y,y))v-P(y,y))
-ExEy((Q(x,x)^Q(y,y))v
-Ex-P(x,x)
-(AxEyP(x,y)^EzQ(z,z))
-(Ax(P(x,x)^-P(x,x))^ExQ(x,x))
-ExEy(P(x,y)^Ex-P(x,y))
+-(ExAy  P(x , y) > AxEyP(y,x))
+(AxAy(P(x,y)>-P(y,x))^-Ax-P(x,x))

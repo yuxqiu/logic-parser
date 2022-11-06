@@ -15,6 +15,9 @@ public:
   // If we can add more const
   [[nodiscard]] auto CanAddConst() const -> bool;
 
+  // Add a new constant and Return it
+  auto AddConst() -> Token;
+
 private:
   std::vector<Token> generated_constants_{};
   constexpr static uint64_t kLimit{10};

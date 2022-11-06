@@ -11,6 +11,8 @@
 class Formula {
 public:
   explicit Formula() = default;
+  Formula(const Formula &) = default;
+
   explicit Formula(std::shared_ptr<Expr> expr);
   ~Formula();
 
@@ -21,16 +23,15 @@ public:
 
   [[nodiscard]] auto ViewChildren() const -> std::vector<Formula>;
 
-  [[nodiscard]] auto Expand() const -> std::vector<std::vector<Formula>>;
+protected:
+  std::shared_ptr<Expr> expr_;
 
 private:
   static void ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
                          std::string &out, Expr *expr);
   void ReleaseResources();
 
-  std::shared_ptr<Expr> expr_;
-
-  friend auto operator<(const Formula &lhs, const Formula &rhs) -> bool;
+  friend auto operator>(const Formula &lhs, const Formula &rhs) -> bool;
 };
 
-auto operator<(const Formula &lhs, const Formula &rhs) -> bool;
+auto operator>(const Formula &lhs, const Formula &rhs) -> bool;
