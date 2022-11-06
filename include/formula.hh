@@ -8,10 +8,18 @@
 #include "expr.hh"
 #include "formula.hh"
 
+/*
+  Manage the lifetime of the Expr
+*/
 class Formula {
 public:
   explicit Formula() = default;
   Formula(const Formula &) = default;
+
+  // We could safely copy/move as
+  // the destructor follows the semantics of ref_count
+  auto operator=(const Formula &) -> Formula & = default;
+  auto operator=(Formula &&) -> Formula & = default;
 
   explicit Formula(std::shared_ptr<Expr> expr);
   ~Formula();

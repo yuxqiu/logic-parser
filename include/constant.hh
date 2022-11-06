@@ -10,7 +10,9 @@ class ConstantManager {
 public:
   // If number is >= generated_constants_.size() or is >= klimit
   // return nullopt
-  [[nodiscard]] auto GetConsts(uint64_t num) const -> std::optional<Token>;
+  //
+  // Generate a new const if currently there is no const
+  [[nodiscard]] auto GetConsts(uint64_t num) -> std::optional<Token>;
 
   // If we can add more const
   [[nodiscard]] auto CanAddConst() const -> bool;

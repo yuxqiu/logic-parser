@@ -182,7 +182,6 @@ void Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
 }
 
 // Process formulas like P(x,y)
-// Can improve tokenizer to optimize this out
 void Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
                                      Token &token) {
   (void)tokenizer;
@@ -206,6 +205,7 @@ void Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
     return;
   }
 
+  // Check the variables inside the literal are valid
   if (std::find(kVarPredicate.begin(), kVarPredicate.end(), token_holder[1]) ==
           kVarPredicate.end() ||
       std::find(kVarPredicate.begin(), kVarPredicate.end(), token_holder[3]) ==

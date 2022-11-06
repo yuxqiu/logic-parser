@@ -9,6 +9,12 @@ Formula::Formula(std::shared_ptr<Expr> expr) : expr_{std::move(expr)} {}
 
 auto Formula::Type() const -> enum Expr::Type { return expr_->Type(); }
 
+// Add all the left child into the stack
+//
+// Left child is defined as
+//  - no left child for literal
+//  - the only child of the UnaryExpr
+//  - the left child of the BinaryExpr
 void Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
                          std::string &out, Expr *expr) {
   while (expr != nullptr) {
@@ -26,6 +32,17 @@ void Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
   }
 }
 
+/*
+  To "reassemble" the formula from the tree iteratively, we need to
+  ask different exprs to provide information at three stages
+    - when no child is visited: '(', '-', 'E', 'A'
+    - when one child is visited: '^', 'v', '>'
+    - when two children are visited: ")"
+
+  So, we design a modified iterative in-order traversal where
+  each expr has at most three stages (0, 1, 2 children are visited).
+  After all children are processed, it will be pop out of the stack
+*/
 auto Formula::Description() const -> std::string {
   // Expr*, uint64_t pair => uint64_t stores number of children visited
   std::stack<std::pair<Expr *, uint64_t>> stack;
@@ -41,6 +58,8 @@ auto Formula::Description() const -> std::string {
       continue;
     }
 
+    // Only BinaryExpr falls into this case
+    // because it has ChildrenSize == 2
     Expr::Description(expr, out, num);
     ExpandLeft(stack, out, expr->ViewChildren()[num].get());
     ++num;
@@ -61,6 +80,18 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
   return ret;
 }
 
+/*
+  Relying on the destructor of Expr is dangerous, as it may
+    - cause stack overflow if the Expr is long enough
+
+  ReleaseResources propose a iterative way to destruct all the formula
+  by using a deque
+
+  It will only destruct the formula only if use_count of current formula is == 1
+    - if use_count == 0, it's already destroyed
+    - if use_count > 1, some other Formulas are also managing this expr,
+      so we don't need to destruct it
+*/
 void Formula::ReleaseResources() {
   std::deque<std::shared_ptr<Expr>> destruct_queue;
   destruct_queue.emplace_back(std::move(expr_));
@@ -68,6 +99,8 @@ void Formula::ReleaseResources() {
     auto front = std::move(destruct_queue.front());
     destruct_queue.pop_front();
     if (front.use_count() == 1) {
+      // increment ref_count, so it will not be destroyed after front goes out
+      // of scope
       auto children = front->ViewChildren();
       for (std::shared_ptr<Expr> &expr : children) {
         destruct_queue.emplace_back(std::move(expr));

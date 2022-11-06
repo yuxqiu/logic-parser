@@ -32,7 +32,7 @@ void PrintParserInformation(std::ostream &out,
       std::vector children = formula.ViewChildren();
       assert(children.size() == 2);
       out << "Its left hand side is " << children[0].Description();
-      out << ", its connective is " << formula.Type();
+      out << ", its connective is " << Expr::TypeToString(formula.Type());
       out << ", and its right hand side is " << children[1].Description();
       out << "." << std::endl;
       return;
@@ -62,7 +62,7 @@ void PrintParserInformation(std::ostream &out,
       std::vector children = formula.ViewChildren();
       assert(children.size() == 2);
       out << "Its left hand side is " << children[0].Description();
-      out << ", its connective is " << formula.Type();
+      out << ", its connective is " << Expr::TypeToString(formula.Type());
       out << ", and its right hand side is " << children[1].Description();
       out << "." << std::endl;
       return;

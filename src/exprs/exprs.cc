@@ -62,21 +62,25 @@ auto operator<(const Expr &lhs, const Expr &rhs) -> bool {
   return lhs.type_ < rhs.type_;
 }
 
-auto operator<<(std::ostream &out, enum Expr::Type type) -> std::ostream & {
+auto Expr::TypeToString(enum Expr::Type type) -> std::string {
   switch (type) {
   case Expr::Type::kAnd:
-    out << "^";
-    break;
+    return "^";
   case Expr::Type::kOr:
-    out << "v";
-    break;
+    return "v";
   case Expr::Type::kImpl:
-    out << ">";
-    break;
+    return ">";
+  case Expr::Type::kNeg:
+    return "-";
+  case Expr::Type::kExist:
+    return "E";
+  case Expr::Type::kUniversal:
+    return "A";
   default:
     assert(false);
   }
-  return out;
+
+  return "Unreachable";
 }
 
 void static LiteralDescription(const Expr *expr, std::string &out,
@@ -91,19 +95,11 @@ void static LiteralDescription(const Expr *expr, std::string &out,
 }
 
 void static UnaryDescription(const Expr *expr, std::string &out, uint64_t num) {
-  if (expr->Type() == Expr::Type::kExist ||
-      expr->Type() == Expr::Type::kUniversal) {
-    if (num == 0) {
-      if (expr->Type() == Expr::Type::kExist) {
-        out += "E";
-      } else if (expr->Type() == Expr::Type::kUniversal) {
-        out += "A";
-      }
+  if (num == 0) {
+    out += Expr::TypeToString(expr->Type());
+    if (expr->Type() == Expr::Type::kExist ||
+        expr->Type() == Expr::Type::kUniversal) {
       out += expr->Infos()[0].ToString();
-    }
-  } else if (expr->Type() == Expr::Type::kNeg) {
-    if (num == 0) {
-      out += "-";
     }
   }
 }
@@ -113,13 +109,7 @@ void static BinaryDescription(const Expr *expr, std::string &out,
   if (num == 0) {
     out += "(";
   } else if (num == 1) {
-    if (expr->Type() == Expr::Type::kAnd) {
-      out += "^";
-    } else if (expr->Type() == Expr::Type::kOr) {
-      out += "v";
-    } else if (expr->Type() == Expr::Type::kImpl) {
-      out += ">";
-    }
+    out += Expr::TypeToString(expr->Type());
   } else if (num == 2) {
     out += ")";
   }
