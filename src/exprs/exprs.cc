@@ -13,7 +13,7 @@ Expr::Expr(enum Type type) : type_(type) {}
 
 auto Expr::Error() const -> bool { return error_; }
 
-void Expr::SetError() { error_ = true; }
+auto Expr::SetError() -> void { error_ = true; }
 
 auto Expr::Type() const -> enum Type { return type_; }
 
@@ -85,8 +85,8 @@ auto Expr::TypeToString(enum Expr::Type type) -> std::string {
   return "Unreachable";
 }
 
-void static LiteralDescription(const Expr *expr, std::string &out,
-                               uint64_t num) {
+auto static LiteralDescription(const Expr *expr, std::string &out, uint64_t num)
+    -> void {
   if (num == 0) {
     auto infos = expr->Infos();
     out += infos[0].ToString();
@@ -96,7 +96,8 @@ void static LiteralDescription(const Expr *expr, std::string &out,
   }
 }
 
-void static UnaryDescription(const Expr *expr, std::string &out, uint64_t num) {
+auto static UnaryDescription(const Expr *expr, std::string &out, uint64_t num)
+    -> void {
   if (num == 0) {
     out += Expr::TypeToString(expr->Type());
     if (expr->Type() == Expr::Type::kExist ||
@@ -106,8 +107,8 @@ void static UnaryDescription(const Expr *expr, std::string &out, uint64_t num) {
   }
 }
 
-void static BinaryDescription(const Expr *expr, std::string &out,
-                              uint64_t num) {
+auto static BinaryDescription(const Expr *expr, std::string &out, uint64_t num)
+    -> void {
   if (num == 0) {
     out += "(";
   } else if (num == 1) {
@@ -117,7 +118,8 @@ void static BinaryDescription(const Expr *expr, std::string &out,
   }
 }
 
-void Expr::Description(const Expr *expr, std::string &out, uint64_t num) {
+auto Expr::Description(const Expr *expr, std::string &out, uint64_t num)
+    -> void {
   if (IsBinary(expr->Type())) {
     BinaryDescription(expr, out, num);
   } else if (IsUnary(expr->Type())) {

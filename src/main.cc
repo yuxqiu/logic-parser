@@ -7,8 +7,8 @@
 #include "parser.hh"
 #include "tableau.hh"
 
-void PrintParserInformation(std::ostream &out,
-                            const Parser::ParserOutput &parser_out) {
+auto PrintParserInformation(std::ostream &out,
+                            const Parser::ParserOutput &parser_out) -> void {
   const Parser::ParseResult result = parser_out.Result();
   const std::string &line = parser_out.Formula().Description();
   const Formula &formula = parser_out.Formula();
@@ -70,9 +70,10 @@ void PrintParserInformation(std::ostream &out,
   }
 }
 
-void PrintTableauInformation(std::ostream &out,
+auto PrintTableauInformation(std::ostream &out,
                              const Parser::ParserOutput &parser_out,
-                             const Tableau::TableauResult &tableau_out) {
+                             const Tableau::TableauResult &tableau_out)
+    -> void {
   const std::string &line = parser_out.Formula().Description();
   switch (tableau_out) {
   case Tableau::TableauResult::kUnsatisfiable:

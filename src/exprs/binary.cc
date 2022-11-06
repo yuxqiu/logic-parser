@@ -7,7 +7,7 @@ BinaryExpr::BinaryExpr(enum Type type, std::shared_ptr<Expr> expr_lhs,
     : Expr(type), expr_lhs_(std::move(expr_lhs)),
       expr_rhs_(std::move(expr_rhs)) {}
 
-void BinaryExpr::Append(std::shared_ptr<Expr> expr) {
+auto BinaryExpr::Append(std::shared_ptr<Expr> expr) -> void {
   if (expr_lhs_ && expr_rhs_) {
     SetError();
     return;
@@ -26,7 +26,7 @@ void BinaryExpr::Append(std::shared_ptr<Expr> expr) {
   expr_rhs_ = std::move(expr);
 }
 
-void BinaryExpr::Append(enum Type type) {
+auto BinaryExpr::Append(enum Type type) -> void {
   if (type_ != Type::kNull || !expr_lhs_) {
     SetError();
     return;

@@ -22,14 +22,14 @@ Tokenizer::Tokenizer(std::string expr) : expr_{std::move(expr)} {
   return Token{std::string{expr_[start_]}};
 }
 
-void Tokenizer::PopToken() {
+auto Tokenizer::PopToken() -> void {
   ++start_;
   ConsumeWhitespace();
 }
 
 auto Tokenizer::Empty() const -> bool { return start_ == expr_.size(); }
 
-void Tokenizer::ConsumeWhitespace() {
+auto Tokenizer::ConsumeWhitespace() -> void {
   const char *whitespaces = " \t\n\v\f\r";
   start_ = expr_.find_first_not_of(whitespaces, start_);
   start_ = start_ == std::string::npos ? expr_.size() : start_;

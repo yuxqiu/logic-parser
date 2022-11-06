@@ -2,12 +2,12 @@
 
 Literal::Literal(Token val) : Expr(Type::kLiteral), val_{std::move(val)} {}
 
-void Literal::Append(std::shared_ptr<Expr> expr) {
+auto Literal::Append(std::shared_ptr<Expr> expr) -> void {
   (void)expr;
   SetError();
 }
 
-void Literal::Append(enum Type type) {
+auto Literal::Append(enum Type type) -> void {
   (void)type;
   SetError();
 }

@@ -34,27 +34,27 @@ private:
     ~ExprStack();
 
     [[nodiscard]] auto Error() const -> bool;
-    void SetError();
+    auto SetError() -> void;
 
   private:
     bool error_{false};
   };
 
-  static void CleanupStack(ExprStack &stack);
-  static void MergeStack(ExprStack &stack);
+  static auto CleanupStack(ExprStack &stack) -> void;
+  static auto MergeStack(ExprStack &stack) -> void;
 
-  static void ProcessLeftParenthesis(ExprStack &stack, Tokenizer &tokenizer,
-                                     Token &token);
-  static void ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
-                                      Token &token);
-  static void ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
-                                      Token &token);
-  static void ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
-                               Token &token);
-  static void ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer,
-                                 Token &token);
-  static void ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
-                                    Token &token);
-  static void ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
-                                      Token &token);
+  static auto ProcessLeftParenthesis(ExprStack &stack, Tokenizer &tokenizer,
+                                     Token &token) -> void;
+  static auto ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
+                                      Token &token) -> void;
+  static auto ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
+                                      Token &token) -> void;
+  static auto ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
+                               Token &token) -> void;
+  static auto ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer,
+                                 Token &token) -> void;
+  static auto ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
+                                    Token &token) -> void;
+  static auto ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
+                                      Token &token) -> void;
 };

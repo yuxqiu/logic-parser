@@ -29,12 +29,13 @@ public:
   [[nodiscard]] static auto IsBinary(enum Expr::Type type) -> bool;
   [[nodiscard]] static auto Negate(enum Expr::Type type) -> enum Expr::Type;
 
-  static void Description(const Expr *expr, std::string &out, uint64_t num);
+  static auto Description(const Expr *expr, std::string &out, uint64_t num)
+      -> void;
   static auto TypeToString(enum Type type) -> std::string;
 
   // Get/Set error during constructing stage
   [[nodiscard]] auto Error() const -> bool;
-  void SetError();
+  auto SetError() -> void;
 
   [[nodiscard]] auto ChildrenSize() const -> uint64_t;
 
@@ -49,8 +50,8 @@ public:
 
   // Append determines which inserted order is correct
   // when we try to construct the expr from raw string
-  virtual void Append(std::shared_ptr<Expr> expr) = 0;
-  virtual void Append(enum Type type) = 0;
+  virtual auto Append(std::shared_ptr<Expr> expr) -> void = 0;
+  virtual auto Append(enum Type type) -> void = 0;
 
   // Whether of not the Expr is completely built
   [[nodiscard]] virtual auto Complete() const -> bool = 0;

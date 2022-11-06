@@ -41,7 +41,7 @@ public:
   // Un-expandable => empty vector
   auto TryExpand() -> std::vector<Theory>;
 
-  void Append(const TableauFormula &formula);
+  auto Append(const TableauFormula &formula) -> void;
 
 private:
   std::priority_queue<TableauFormula, std::vector<TableauFormula>,

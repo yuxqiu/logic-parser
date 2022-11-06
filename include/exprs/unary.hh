@@ -8,8 +8,8 @@ public:
   explicit UnaryExpr(enum Type type, std::shared_ptr<Expr> expr);
   ~UnaryExpr() override = default;
 
-  void Append(std::shared_ptr<Expr> expr) override;
-  void Append(enum Type type) override;
+  auto Append(std::shared_ptr<Expr> expr) -> void override;
+  auto Append(enum Type type) -> void override;
 
   [[nodiscard]] auto Complete() const -> bool override;
 

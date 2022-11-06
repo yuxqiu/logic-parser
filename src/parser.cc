@@ -59,7 +59,7 @@ Parser::ParserOutput::ParserOutput(class Formula &&owner,
 
 auto Parser::ExprStack::Error() const -> bool { return error_; }
 
-void Parser::ExprStack::SetError() { error_ = true; }
+auto Parser::ExprStack::SetError() -> void { error_ = true; }
 
 Parser::ExprStack::~ExprStack() {
   while (!empty()) {
@@ -71,7 +71,7 @@ Parser::ExprStack::~ExprStack() {
 /**
  * On success, return true; if encounter any error during merging, return false
  */
-void Parser::MergeStack(ExprStack &stack) {
+auto Parser::MergeStack(ExprStack &stack) -> void {
   // First merge always come from 1) a ')' or 2) a literal
   // This can always be merged
   if (stack.size() > 1 && stack.top()->Complete()) {
@@ -103,16 +103,16 @@ void Parser::MergeStack(ExprStack &stack) {
   }
 }
 
-void Parser::ProcessLeftParenthesis(ExprStack &stack, Tokenizer &tokenizer,
-                                    Token &token) {
+auto Parser::ProcessLeftParenthesis(ExprStack &stack, Tokenizer &tokenizer,
+                                    Token &token) -> void {
   (void)tokenizer;
   (void)token;
   // If ( => a new BinaryExpr
   stack.emplace(std::make_shared<BinaryExpr>());
 }
 
-void Parser::ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
-                                     Token &token) {
+auto Parser::ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
+                                     Token &token) -> void {
   (void)tokenizer;
   (void)token;
   // if these, we set an error
@@ -129,8 +129,8 @@ void Parser::ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
   MergeStack(stack);
 }
 
-void Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
-                                     Token &token) {
+auto Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
+                                     Token &token) -> void {
   (void)tokenizer;
 
   // if these, we set an error
@@ -148,24 +148,24 @@ void Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
   stack.top()->Append(type);
 }
 
-void Parser::ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
-                              Token &token) {
+auto Parser::ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
+                              Token &token) -> void {
   (void)tokenizer;
   // If UnaryProp (-) => create a new Unary Expr
   enum Expr::Type type = kUnaryPropToType.at(token);
   stack.emplace(std::make_shared<UnaryExpr>(type));
 }
 
-void Parser::ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer,
-                                Token &token) {
+auto Parser::ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer,
+                                Token &token) -> void {
   (void)tokenizer;
   // If Literal => create a new literal
   stack.emplace(std::make_shared<Literal>(std::move(token)));
   MergeStack(stack);
 }
 
-void Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
-                                   Token &token) {
+auto Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
+                                   Token &token) -> void {
   (void)tokenizer;
   Token next_token = tokenizer.PeekToken();
   tokenizer.PopToken();
@@ -182,8 +182,8 @@ void Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
 }
 
 // Process formulas like P(x,y)
-void Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
-                                     Token &token) {
+auto Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
+                                     Token &token) -> void {
   (void)tokenizer;
   std::vector<Token> token_holder;
   token_holder.reserve(5);

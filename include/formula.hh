@@ -30,9 +30,9 @@ protected:
   std::shared_ptr<Expr> expr_;
 
 private:
-  static void ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
-                         std::string &out, Expr *expr);
-  void ReleaseResources();
+  static auto ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
+                         std::string &out, Expr *expr) -> void;
+  auto ReleaseResources() -> void;
 
   friend auto operator>(const Formula &lhs, const Formula &rhs) -> bool;
 };

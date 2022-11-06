@@ -15,8 +15,8 @@ auto Formula::Type() const -> enum Expr::Type { return expr_->Type(); }
 //  - no left child for literal
 //  - the only child of the UnaryExpr
 //  - the left child of the BinaryExpr
-void Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
-                         std::string &out, Expr *expr) {
+auto Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
+                         std::string &out, Expr *expr) -> void {
   while (expr != nullptr) {
     Expr::Description(expr, out, 0);
     stack.emplace(expr, 1);
@@ -92,7 +92,7 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
     - if use_count > 1, some other Formulas are also managing this expr,
       so we don't need to destruct it
 */
-void Formula::ReleaseResources() {
+auto Formula::ReleaseResources() -> void {
   std::deque<std::shared_ptr<Expr>> destruct_queue;
   destruct_queue.emplace_back(std::move(expr_));
   while (!destruct_queue.empty()) {

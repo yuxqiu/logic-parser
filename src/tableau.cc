@@ -65,10 +65,11 @@ TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
   return ret;
 }
 
-static void Flatten(std::vector<Expr *> &flatten,
+static auto Flatten(std::vector<Expr *> &flatten,
                     std::vector<uint64_t> &parents,
                     std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
-                    const std::shared_ptr<Expr> &expr, const Token &src) {
+                    const std::shared_ptr<Expr> &expr, const Token &src)
+    -> void {
   for (std::vector<std::vector<Expr>>::size_type i = 1; i < flatten.size();
        ++i) {
     if (!to_merge[i].empty()) {
@@ -92,10 +93,10 @@ static void Flatten(std::vector<Expr *> &flatten,
   }
 }
 
-static void Merge(const Token &src, std::vector<Expr *> &flatten,
+static auto Merge(const Token &src, std::vector<Expr *> &flatten,
                   std::vector<uint64_t> &parents,
                   std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
-                  const Token &dst) {
+                  const Token &dst) -> void {
   for (auto i = to_merge.size() - 1; i > 0; --i) {
     if (flatten[i]->Type() ==
         Expr::Type::kLiteral) { // Literal => constructs literal
@@ -253,7 +254,7 @@ auto Theory::Close() const -> bool { return close_; }
 // An encapsulation of Append
 // Help us to filter out literal and Assign formula to their appropriate
 // structure
-void Theory::Append(const TableauFormula &formula) {
+auto Theory::Append(const TableauFormula &formula) -> void {
   if (formula.Type() ==
       Expr::Type::kLiteral) { // if tableau literal => to literal or neg_literal
     // use description to deal with prop literal and pred literal
