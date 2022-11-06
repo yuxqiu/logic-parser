@@ -46,10 +46,16 @@ auto Parser::ParserOutput::Formula() const -> const class Formula & {
   return formula_;
 }
 
+auto Parser::ParserOutput::RawFormula() const -> const std::string & {
+  return raw_formula_;
+}
+
 auto Parser::ParserOutput::Result() const -> ParseResult { return result_; }
 
-Parser::ParserOutput::ParserOutput(class Formula &&owner, ParseResult result)
-    : formula_(owner), result_(result) {}
+Parser::ParserOutput::ParserOutput(class Formula &&owner,
+                                   std::string &&raw_formula,
+                                   ParseResult result)
+    : formula_(owner), raw_formula_(raw_formula), result_(result) {}
 
 auto Parser::ExprStack::Error() const -> bool { return error_; }
 
@@ -218,7 +224,7 @@ auto Parser::Parse(std::string line) -> ParserOutput {
   bool proposition{false};
   bool predicate{false};
 
-  Tokenizer tokenizer{std::move(line)};
+  Tokenizer tokenizer{line};
   ExprStack stack;
 
   /**
@@ -298,10 +304,10 @@ auto Parser::Parse(std::string line) -> ParserOutput {
   */
   if (stack.Error() || stack.size() != 1 || (proposition == predicate) ||
       !stack.top()->Complete() || stack.top()->Error()) {
-    return ParserOutput{Formula{}, ParseResult::kNotAFormula};
+    return ParserOutput{Formula{}, std::move(line), ParseResult::kNotAFormula};
   }
 
-  return ParserOutput{Formula{std::move(stack.top())},
+  return ParserOutput{Formula{std::move(stack.top())}, std::move(line),
                       proposition ? ParseResult::kProposition
                                   : ParseResult::kPredicate};
 }

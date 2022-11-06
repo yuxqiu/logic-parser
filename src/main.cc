@@ -14,7 +14,7 @@ void PrintParserInformation(std::ostream &out,
   const Formula &formula = parser_out.Formula();
 
   if (result == Parser::ParseResult::kNotAFormula) {
-    out << line << " is not a formula." << std::endl;
+    out << parser_out.RawFormula() << " is not a formula." << std::endl;
     return;
   }
 
