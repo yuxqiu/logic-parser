@@ -5,3 +5,4 @@ PARSE SAT
 -((p>q)>(q>p))
 (((pvq)vr)^(-pv-q))
 (p>(p^-p))
+-(((p>r)v(q>r))>((pvq)>r))

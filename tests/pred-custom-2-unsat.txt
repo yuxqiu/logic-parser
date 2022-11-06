@@ -2,3 +2,4 @@ PARSE SAT
 -(ExAy  P(x , y) > AxEyP(y,x))
 (AxAy(P(x,y)>-P(y,x))^-Ax-P(x,x))
 Ax(P(x,x)^-P(x,x))
+-(Ax-P(x,x)>-EyP(y,y))
