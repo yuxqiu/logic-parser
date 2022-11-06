@@ -4,9 +4,8 @@
 
 BinaryExpr::BinaryExpr(enum Type type, std::shared_ptr<Expr> expr_lhs,
                        std::shared_ptr<Expr> expr_rhs)
-    : expr_lhs_(std::move(expr_lhs)), expr_rhs_(std::move(expr_rhs)) {
-  type_ = type;
-}
+    : Expr(type), expr_lhs_(std::move(expr_lhs)),
+      expr_rhs_(std::move(expr_rhs)) {}
 
 void BinaryExpr::Append(std::shared_ptr<Expr> expr) {
   if (expr_lhs_ && expr_rhs_) {

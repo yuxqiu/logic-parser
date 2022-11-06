@@ -10,9 +10,7 @@ UnaryExpr::UnaryExpr(enum Type type) {
 }
 
 UnaryExpr::UnaryExpr(enum Type type, std::shared_ptr<Expr> expr)
-    : expr_(std::move(expr)) {
-  type_ = type;
-}
+    : Expr(type), expr_(std::move(expr)) {}
 
 void UnaryExpr::Append(std::shared_ptr<Expr> expr) {
   if (expr_ || type_ == Type::kNull) {

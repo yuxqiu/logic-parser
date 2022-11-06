@@ -1,6 +1,6 @@
 #include "exprs/literal.hh"
 
-Literal::Literal(Token val) : val_{std::move(val)} { type_ = Type::kLiteral; }
+Literal::Literal(Token val) : Expr(Type::kLiteral), val_{std::move(val)} {}
 
 void Literal::Append(std::shared_ptr<Expr> expr) {
   (void)expr;

@@ -38,7 +38,14 @@ public:
 
   [[nodiscard]] auto ChildrenSize() const -> uint64_t;
 
+  explicit Expr() = default;
+  explicit Expr(enum Type type);
+
   virtual ~Expr() = default;
+
+  // In case assignment causes the shared_ptr to recursively call the destructor
+  auto operator=(const Expr &) -> Expr & = delete;
+  auto operator=(Expr &&) -> Expr & = delete;
 
   // Append determines which inserted order is correct
   // when we try to construct the expr from raw string
@@ -60,7 +67,11 @@ public:
   [[nodiscard]] virtual auto Infos() const -> std::vector<Token> = 0;
 
 protected:
-  enum Type type_ { Type::kNull };
+  enum Type type_ {
+    Type::kNull
+  }; // protected because BinaryExpr needs to set type_ later
+
+private:
   bool error_{false};
 
   friend auto operator<(const Expr &lhs, const Expr &rhs) -> bool;

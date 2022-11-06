@@ -36,6 +36,6 @@ public:
 private:
   void ConsumeWhitespace();
 
-  std::string::size_type start_{0};
   std::string expr_;
+  std::string::size_type start_{0};
 };

@@ -9,6 +9,8 @@
 #include "exprs/literal.hh"
 #include "exprs/unary.hh"
 
+Expr::Expr(enum Type type) : type_(type) {}
+
 auto Expr::Error() const -> bool { return error_; }
 
 void Expr::SetError() { error_ = true; }
