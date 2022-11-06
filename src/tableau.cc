@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "expr.hh"
+#include "exprs/exprs.hh"
 #include "formula.hh"
 #include "tableau.hh"
 #include "tokenizer.hh"
@@ -45,7 +46,7 @@ TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
   /*
     Try to expand and Encapsulate all back to the TableauFormula
 
-    This provides encapsulation and also ensures that the ownership of the
+    This provides encapsulation and also ensures that the lifetime of the
     shared_ptr is properly managed
   */
   std::vector expansion = TableauFormula::Expand(expr_, token);
@@ -64,45 +65,44 @@ TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
   return ret;
 }
 
-static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
-                           const Token &dst) -> std::shared_ptr<Expr> {
-  std::vector<std::shared_ptr<Expr>> flatten{{}, expr};
-  std::vector<uint64_t> parents{0, 0};
-  std::vector<std::vector<std::shared_ptr<Expr>>> to_merge{{}, {}};
-
-  // Flatten the AST
+static void Flatten(std::vector<Expr *> &flatten,
+                    std::vector<uint64_t> &parents,
+                    std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
+                    const std::shared_ptr<Expr> &expr, const Token &src) {
   for (std::vector<std::vector<Expr>>::size_type i = 1; i < flatten.size();
        ++i) {
-    if ((flatten[i]->Type() == Expr::Type::kExist ||
-         flatten[i]->Type() == Expr::Type::kUniversal) &&
-        flatten[i]->Infos()[0] == src) {
-      // If var is bounded by new quantifier, store it to to_merge directly
-      // we will then merge it by checking the same condition
-      to_merge[i].emplace_back(expr);
+    if (!to_merge[i].empty()) {
       continue;
     }
+
     auto children = flatten[i]->ViewChildren();
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
-      flatten.emplace_back(*it);
+      flatten.emplace_back(it->get());
       parents.emplace_back(i);
       to_merge.emplace_back();
+
+      if (((*it)->Type() == Expr::Type::kExist ||
+           (*it)->Type() == Expr::Type::kUniversal) &&
+          (*it)->Infos()[0] == src) {
+        // If var is bounded by new quantifier, store it to to_merge directly
+        // we will then merge it by checking the same condition
+        to_merge.back().emplace_back(expr);
+      }
     }
   }
+}
 
-  assert(to_merge.size() == flatten.size());
-
-  // Merge back all the changes
+static void Merge(const Token &src, std::vector<Expr *> &flatten,
+                  std::vector<uint64_t> &parents,
+                  std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
+                  const Token &dst) {
   for (auto i = to_merge.size() - 1; i > 0; --i) {
     if (flatten[i]->Type() ==
         Expr::Type::kLiteral) { // Literal => constructs literal
       auto infos = flatten[i]->Infos();
       assert(infos.size() == 3);
-      if (infos[1] == src) {
-        infos[1] = dst;
-      }
-      if (infos[2] == src) {
-        infos[2] = dst;
-      }
+      infos[1] = infos[1] == src ? dst : infos[1];
+      infos[2] = infos[2] == src ? dst : infos[2];
       to_merge[parents[i]].emplace_back(std::make_shared<PredicateLiteral>(
           std::move(infos[0]), std::move(infos[1]), std::move(infos[2])));
     } else if (Expr::IsBinary(flatten[i]->Type())) { // Construct Binary
@@ -128,6 +128,29 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
       assert(false);
     }
   }
+}
+
+static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
+                           const Token &dst) -> std::shared_ptr<Expr> {
+  std::vector<Expr *> flatten{{}, expr.get()};
+  std::vector<uint64_t> parents{0, 0};
+  std::vector<std::vector<std::shared_ptr<Expr>>> to_merge{{}, {}};
+
+  if ((expr->Type() == Expr::Type::kExist ||
+       expr->Type() == Expr::Type::kUniversal) &&
+      expr->Infos()[0] == src) {
+    // If var is bounded by new quantifier, store it to to_merge directly
+    // we will then merge it by checking the same condition
+    to_merge[1].emplace_back(expr);
+  }
+
+  // Flatten the AST
+  Flatten(flatten, parents, to_merge, expr, src);
+
+  assert(to_merge.size() == flatten.size());
+
+  // Merge back all the changes
+  Merge(src, flatten, parents, to_merge, dst);
 
   return std::move(to_merge[0][0]);
 }
@@ -331,6 +354,7 @@ auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
     }
 
     // If theory is not undecidable and is not closed
+    // and we could not generate more theories from it
     // we know it's satisfiable
     //
     // it's not closed because we guarantee any formula added

@@ -12,6 +12,7 @@ public:
   // return nullopt
   //
   // Generate a new const if currently there is no const
+  // Vacuously true is not allowed in our SAT system
   [[nodiscard]] auto GetConsts(uint64_t num) -> std::optional<Token>;
 
   // If we can add more const
