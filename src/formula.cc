@@ -75,7 +75,7 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
   std::vector<Formula> ret;
   ret.reserve(children.size());
   for (auto &expr : children) {
-    ret.emplace_back(expr);
+    ret.emplace_back(std::move(expr));
   }
   return ret;
 }
@@ -96,7 +96,7 @@ auto Formula::ReleaseResources() -> void {
   std::deque<std::shared_ptr<Expr>> destruct_queue;
   destruct_queue.emplace_back(std::move(expr_));
   while (!destruct_queue.empty()) {
-    auto front = std::move(destruct_queue.front());
+    const auto front = std::move(destruct_queue.front());
     destruct_queue.pop_front();
     if (front.use_count() == 1) {
       // increment ref_count, so it will not be destroyed after front goes out

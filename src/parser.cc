@@ -63,7 +63,7 @@ auto Parser::ExprStack::SetError() -> void { error_ = true; }
 
 Parser::ExprStack::~ExprStack() {
   while (!empty()) {
-    Formula destructed_formula{std::move(top())};
+    const Formula destructed_formula{std::move(top())};
     pop();
   }
 }
@@ -140,7 +140,7 @@ auto Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
     return;
   }
 
-  enum Expr::Type type = kBinaryAllToType.at(token);
+  const enum Expr::Type type = kBinaryAllToType.at(token);
 
   // If the BinaryExpr cannot be added to the top formula
   // e.g. top is a Literal/Unary

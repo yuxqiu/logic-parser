@@ -123,14 +123,14 @@ auto main(int argc, char *argv[]) -> int {
   }
 
   while (std::getline(file, line)) {
-    auto parse_out = Parser::Parse(line);
+    const auto parse_out = Parser::Parse(line);
     PrintParserInformation(std::cout, parse_out);
     if (solve) {
       if (parse_out.Result() == Parser::ParseResult::kNotAFormula) {
         PrintParserInformation(std::cout, parse_out);
         continue;
       }
-      auto tableau_result = Tableau::Solve(parse_out);
+      const auto tableau_result = Tableau::Solve(parse_out);
       PrintTableauInformation(std::cout, parse_out, tableau_result);
     }
   }

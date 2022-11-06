@@ -76,7 +76,7 @@ static auto Flatten(std::vector<Expr *> &flatten,
       continue;
     }
 
-    auto children = flatten[i]->ViewChildren();
+    const auto children = flatten[i]->ViewChildren();
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
       flatten.emplace_back(it->get());
       parents.emplace_back(i);
