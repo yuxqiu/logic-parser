@@ -29,12 +29,6 @@ public:
   [[nodiscard]] static auto IsBinary(enum Expr::Type type) -> bool;
   [[nodiscard]] static auto Negate(enum Expr::Type type) -> enum Expr::Type;
 
-  // 1. Number of branches
-  // 2. Number of children
-  [[nodiscard]] static auto Expand(const std::shared_ptr<Expr> &expr,
-                                   const Token &token)
-      -> std::vector<std::vector<std::shared_ptr<Expr>>>;
-
   static void Description(const Expr *expr, std::string &out, uint64_t num);
 
   [[nodiscard]] auto Error() const -> bool;

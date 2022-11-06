@@ -23,6 +23,12 @@ public:
 private:
   // next needed constant num
   uint64_t const_num_{0};
+
+  // 1. Number of branches
+  // 2. Number of children
+  [[nodiscard]] static auto Expand(const std::shared_ptr<Expr> &expr,
+                                   const Token &token)
+      -> std::vector<std::vector<std::shared_ptr<Expr>>>;
 };
 
 class Theory {

@@ -101,6 +101,7 @@ void Parser::ProcessLeftParenthesis(ExprStack &stack, Tokenizer &tokenizer,
                                     Token &token) {
   (void)tokenizer;
   (void)token;
+  // If ( => a new BinaryExpr
   stack.emplace(std::make_shared<BinaryExpr>());
 }
 
@@ -108,11 +109,17 @@ void Parser::ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
                                      Token &token) {
   (void)tokenizer;
   (void)token;
+  // if these, we set an error
+  //  - stack is empty
+  //  - stack.top is not Complete
+  //  - stack.top.type is not Binary Expr
   if (stack.empty() || !stack.top()->Complete() ||
       !Expr::IsBinary(stack.top()->Type())) {
     stack.SetError();
     return;
   }
+
+  // we can merge at least one level of the stack
   MergeStack(stack);
 }
 
@@ -120,18 +127,25 @@ void Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
                                      Token &token) {
   (void)tokenizer;
 
+  // if these, we set an error
+  //  - stack is empty (Binary Connective appears before any Formula)
   if (stack.empty()) {
     stack.SetError();
     return;
   }
 
   enum Expr::Type type = kBinaryAllToType.at(token);
+
+  // If the BinaryExpr cannot be added to the top formula
+  // e.g. top is a Literal/Unary
+  // the top formula will be set an error state by its Append
   stack.top()->Append(type);
 }
 
 void Parser::ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
                               Token &token) {
   (void)tokenizer;
+  // If UnaryProp (-) => create a new Unary Expr
   enum Expr::Type type = kUnaryPropToType.at(token);
   stack.emplace(std::make_shared<UnaryExpr>(type));
 }
@@ -139,6 +153,7 @@ void Parser::ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
 void Parser::ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer,
                                 Token &token) {
   (void)tokenizer;
+  // If Literal => create a new literal
   stack.emplace(std::make_shared<Literal>(std::move(token)));
   MergeStack(stack);
 }
@@ -149,6 +164,7 @@ void Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
   Token next_token = tokenizer.PeekToken();
   tokenizer.PopToken();
 
+  // If the bounded var cannot be founded in accepted var => set an error
   if (std::find(kVarPredicate.begin(), kVarPredicate.end(), next_token) ==
       kVarPredicate.end()) {
     stack.SetError();
@@ -160,12 +176,14 @@ void Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
 }
 
 // Process formulas like P(x,y)
+// Can improve tokenizer to optimize this out
 void Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
                                      Token &token) {
   (void)tokenizer;
   std::vector<Token> token_holder;
   token_holder.reserve(5);
 
+  // Hard coded way to process Predicate Formulas
   for (int i = 0; i < 5; ++i) {
     if (tokenizer.Empty()) {
       stack.SetError();
@@ -203,6 +221,12 @@ auto Parser::Parse(std::string line) -> ParserOutput {
   Tokenizer tokenizer{std::move(line)};
   ExprStack stack;
 
+  /**
+   * Extract token until 1) no more token or 2) we get a formula that is a prop
+     and also pred
+   *
+   * Dispatch each token to its corresponding event
+   */
   while (!tokenizer.Empty() && (!proposition || !predicate)) {
     if (stack.Error() || (!stack.empty() && stack.top()->Error())) {
       break;
@@ -264,6 +288,14 @@ auto Parser::Parse(std::string line) -> ParserOutput {
     stack.SetError();
   }
 
+  /*
+    if
+      - stack is on error (the last action triggers error)
+      - stack has more than one formula (unbalanced bracket)
+      - both prop and pred (has symbol in both prop and pred - incorrect syntax)
+      - top formula is not complete (missing symbol - incorrect syntax)
+      - top formula is in error (unmatched symbol - incorrect syntax)
+  */
   if (stack.Error() || stack.size() != 1 || (proposition == predicate) ||
       !stack.top()->Complete() || stack.top()->Error()) {
     return ParserOutput{Formula{}, ParseResult::kNotAFormula};

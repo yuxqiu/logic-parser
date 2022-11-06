@@ -1,3 +1,4 @@
+#include <cassert>
 #include <deque>
 #include <memory>
 #include <queue>
@@ -18,8 +19,12 @@ TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
     -> std::vector<std::vector<TableauFormula>> {
   Token token;
 
-  // Decorator of Quantified Expr
   if (Type() == Expr::Type::kUniversal) {
+    /*
+      if Universal Formula => we need to get a constant based on
+        - the number of constants used by the Formula
+        - the number of available constants
+    */
     std::optional requested_const = manager.GetConsts(const_num_);
     if (!requested_const.has_value()) {
       return {};
@@ -27,13 +32,23 @@ TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
     ++const_num_;
     token = std::move(requested_const.value());
   } else if (Type() == Expr::Type::kExist) {
+    /*
+      if Existential Formula => we need to add a constant to the list based on
+        - the availability of the constant manager
+    */
     if (!manager.CanAddConst()) {
       return {};
     }
     token = manager.AddConst();
   }
 
-  std::vector expansion = Expr::Expand(expr_, token);
+  /*
+    Try to expand and Encapsulate all back to the TableauFormula
+
+    This provides encapsulation and also ensures that the ownership of the
+    shared_ptr is properly managed
+  */
+  std::vector expansion = TableauFormula::Expand(expr_, token);
   std::vector<std::vector<TableauFormula>> ret;
   ret.reserve(expansion.size());
 
@@ -49,14 +64,175 @@ TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
   return ret;
 }
 
+static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
+                           const Token &dst) -> std::shared_ptr<Expr> {
+  std::vector<std::shared_ptr<Expr>> flatten{{}, expr};
+  std::vector<uint64_t> parents{0, 0};
+  std::vector<std::vector<std::shared_ptr<Expr>>> to_merge{{}, {}};
+
+  // Flatten the AST
+  for (std::vector<std::vector<Expr>>::size_type i = 1; i < flatten.size();
+       ++i) {
+    if ((flatten[i]->Type() == Expr::Type::kExist ||
+         flatten[i]->Type() == Expr::Type::kUniversal) &&
+        flatten[i]->Infos()[0] == src) {
+      // If var is bounded by new quantifier, store it to to_merge directly
+      // we will then merge it by checking the same condition
+      to_merge[i].emplace_back(expr);
+      continue;
+    }
+    auto children = flatten[i]->ViewChildren();
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+      flatten.emplace_back(*it);
+      parents.emplace_back(i);
+      to_merge.emplace_back();
+    }
+  }
+
+  assert(to_merge.size() == flatten.size());
+
+  // Merge back all the changes
+  for (auto i = to_merge.size() - 1; i > 0; --i) {
+    if (flatten[i]->Type() ==
+        Expr::Type::kLiteral) { // Literal => constructs literal
+      auto infos = flatten[i]->Infos();
+      assert(infos.size() == 3);
+      if (infos[1] == src) {
+        infos[1] = dst;
+      }
+      if (infos[2] == src) {
+        infos[2] = dst;
+      }
+      to_merge[parents[i]].emplace_back(std::make_shared<PredicateLiteral>(
+          std::move(infos[0]), std::move(infos[1]), std::move(infos[2])));
+    } else if (Expr::IsBinary(flatten[i]->Type())) { // Construct Binary
+      to_merge[parents[i]].emplace_back(std::make_shared<BinaryExpr>(
+          flatten[i]->Type(), std::move(to_merge[i][0]),
+          std::move(to_merge[i][1])));
+    } else if (flatten[i]->Type() == Expr::Type::kExist ||
+               flatten[i]->Type() ==
+                   Expr::Type::kUniversal) { // Quantified Unary
+      if (flatten[i]->Infos()[0] ==
+          src) { // if variable is re-bounded => DO a simple copy
+        to_merge[parents[i]].emplace_back(std::move(to_merge[i][0]));
+      } else { // otherwise => Construct Quantified Expr
+        to_merge[parents[i]].emplace_back(std::make_shared<QuantifiedUnaryExpr>(
+            flatten[i]->Type(), std::move(flatten[i]->Infos()[0]),
+            std::move(to_merge[i][0])));
+      }
+    } else if (flatten[i]->Type() ==
+               Expr::Type::kNeg) { // Negation => Construct UnaryExpr
+      to_merge[parents[i]].emplace_back(std::make_shared<UnaryExpr>(
+          flatten[i]->Type(), std::move(to_merge[i][0])));
+    } else { // Unreachable
+      assert(false);
+    }
+  }
+
+  return std::move(to_merge[0][0]);
+}
+
+[[nodiscard]] auto TableauFormula::Expand(const std::shared_ptr<Expr> &expr,
+                                          const Token &token)
+    -> std::vector<std::vector<std::shared_ptr<Expr>>> {
+  (void)token;
+  if (expr->Type() == Expr::Type::kAnd) { // Alpha expansion
+    return {expr->ViewChildren()};
+  }
+  if (expr->Type() == Expr::Type::kOr) { // Beta expansion
+    return {{expr->ViewChildren()[0]}, {expr->ViewChildren()[1]}};
+  }
+  if (expr->Type() == Expr::Type::kImpl) { // Beta expansion
+    return {{std::make_shared<UnaryExpr>(Expr::Type::kNeg,
+                                         expr->ViewChildren()[0])},
+            {expr->ViewChildren()[1]}};
+  }
+  if (expr->Type() == Expr::Type::kExist ||
+      expr->Type() == Expr::Type::kUniversal) {
+    // Delta/Gamma expansion
+    /*
+      1. Copy every node that needs to be copied
+        - Every node needs to be copied except the node where the variable is
+          quantified again
+        - They need to be copied because we need to replace the Token with new
+          constants but we don't want to pollute the original Formula
+      2. After copying, we return the formulas based on the rule of Delta
+         expansion
+        - Gamma will be added back in TryExpand
+    */
+    return {{CopyAndReplace(expr->Infos()[0], expr->ViewChildren()[0], token)}};
+  }
+  if (expr->Type() == Expr::Type::kNeg) {
+    std::shared_ptr<Expr> children = expr->ViewChildren()[0];
+
+    // If we are negating literal, we return Neg+Literal
+    // by the definition of literals in Tableau
+    if (children->Type() == Expr::Type::kLiteral) {
+      return {{std::make_shared<UnaryExpr>(Expr::Type::kNeg,
+                                           expr->ViewChildren()[0])}};
+    }
+
+    // If Unary
+    if (Expr::IsUnary(children->Type())) {
+      // If Neg, we skip the double Negation
+      if (children->Type() == Expr::Type::kNeg) {
+        return {{std::move(children->ViewChildren()[0])}};
+      }
+      // Otherwise, we negate the Quantified Formula based on their rule
+      if (children->Type() == Expr::Type::kExist ||
+          children->Type() == Expr::Type::kUniversal) {
+        std::vector infos = children->Infos();
+        assert(infos.size() == 1);
+
+        return {{std::make_shared<QuantifiedUnaryExpr>(
+            Expr::Negate(children->Type()), std::move(infos[0]),
+            std::make_shared<UnaryExpr>(
+                Expr::Type::kNeg, std::move(children->ViewChildren()[0])))}};
+      }
+    }
+
+    // If Binary => we negate them based on their rules
+    if (children->Type() == Expr::Type::kAnd ||
+        children->Type() == Expr::Type::kOr) {
+      std::vector children_of_children = children->ViewChildren();
+      auto neg_children_left = std::make_shared<UnaryExpr>(
+          Expr::Type::kNeg, std::move(children_of_children[0]));
+      auto neg_children_right = std::make_shared<UnaryExpr>(
+          Expr::Type::kNeg, std::move(children_of_children[1]));
+      std::shared_ptr<Expr> node = std::make_shared<BinaryExpr>(
+          Expr::Negate(children->Type()), std::move(neg_children_left),
+          std::move(neg_children_right));
+      return {{std::move(node)}};
+    }
+
+    // If implication => Negate it based on its fule
+    if (children->Type() == Expr::Type::kImpl) {
+      std::vector children_of_children = children->ViewChildren();
+      auto neg_children_right = std::make_shared<UnaryExpr>(
+          Expr::Type::kNeg, std::move(children_of_children[1]));
+      std::shared_ptr<Expr> impl_node = std::make_shared<BinaryExpr>(
+          Expr::Negate(children->Type()), std::move(children_of_children[0]),
+          std::move(neg_children_right));
+      return {{std::move(impl_node)}};
+    }
+  }
+
+  assert(false);
+  return {};
+}
+
 Theory::Theory(const TableauFormula &formula) { Append(formula); }
 
 auto Theory::Undecidable() const -> bool { return undecidable_; }
 
 auto Theory::Close() const -> bool { return close_; }
 
+// An encapsulation of Append
+// Help us to filter out literal and Assign formula to their appropriate
+// structure
 void Theory::Append(const TableauFormula &formula) {
-  if (formula.Type() == Expr::Type::kLiteral) {
+  if (formula.Type() ==
+      Expr::Type::kLiteral) { // if tableau literal => to literal or neg_literal
     // use description to deal with prop literal and pred literal
     auto literal = formula.Description();
     if (neg_literals_.find(Token{literal}) != neg_literals_.end()) {
@@ -78,7 +254,7 @@ void Theory::Append(const TableauFormula &formula) {
     return;
   }
 
-  formulas_.emplace(formula);
+  formulas_.emplace(formula); // otherwise, go to priority_queue
 }
 
 auto Theory::TryExpand() -> std::vector<Theory> {
@@ -86,6 +262,15 @@ auto Theory::TryExpand() -> std::vector<Theory> {
   while (!formulas_.empty()) {
     auto formula = formulas_.top();
     formulas_.pop();
+
+    // Try expanding the formula, if we cannot expand
+    //  - no more constants
+    //  - reach constant limits
+    // we continue to try next one, and drop the current one
+    //
+    // We can safely drop even in the second condition because
+    // in our priority_queue, existential quantifier always come before
+    // universal
     auto expansions = formula.Expand(manager_);
     if (expansions.empty()) {
       continue;
@@ -111,7 +296,14 @@ auto Theory::TryExpand() -> std::vector<Theory> {
     return new_theories;
   }
 
-  // If empty and const_num is greater than 10,
+  /*
+    After consuming all the formulas, there are only two possibilities:
+      - we could not expand because no more constant is available (but we could
+        have more)
+      - we reach the constant limit
+
+    In the second case, we need to mark our theory as undecidable
+  */
   if (formulas_.empty() && !manager_.CanAddConst()) {
     // we cannot decide its satisfiability
     undecidable_ = true;
@@ -124,7 +316,8 @@ auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
   std::deque<Theory> queue;
   queue.emplace_back(TableauFormula{parser_out.Formula()});
 
-  bool undecidable{false};
+  bool undecidable{
+      false}; // to mark whether we have encountered undecidable formula
 
   while (!queue.empty()) {
     Theory theory{std::move(queue.front())};
@@ -137,6 +330,12 @@ auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
       continue;
     }
 
+    // If theory is not undecidable and is not closed
+    // we know it's satisfiable
+    //
+    // it's not closed because we guarantee any formula added
+    // to the queue is not closed, and TryExpand will not yield
+    // close state.
     if (theories.empty()) {
       return TableauResult::kSatisfiable;
     }
