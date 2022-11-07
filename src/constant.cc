@@ -12,7 +12,7 @@ auto ConstantManager::GetConsts(uint64_t num) -> std::optional<Token> {
     AddConst();
   }
 
-  if (num >= kLimit || num >= generated_constants_.size()) {
+  if (num >= generated_constants_.size()) {
     return {};
   }
   return generated_constants_[num];

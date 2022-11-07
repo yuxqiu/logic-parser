@@ -14,7 +14,6 @@
 class TableauFormula : public Formula {
 public:
   explicit TableauFormula(const Formula &formula);
-  explicit TableauFormula(std::shared_ptr<Expr> expr);
 
   [[nodiscard]] auto Expand(ConstantManager &manager)
       -> std::vector<std::vector<TableauFormula>>;
