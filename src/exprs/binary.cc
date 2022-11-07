@@ -31,7 +31,7 @@ auto BinaryExpr::Append(enum Type type) -> void {
     SetError();
     return;
   }
-  if (type != Type::kAnd && type != Type::kOr && type != Type::kImpl) {
+  if (!IsBinary(type)) {
     SetError();
     return;
   }

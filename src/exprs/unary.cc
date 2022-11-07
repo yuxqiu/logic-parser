@@ -2,7 +2,7 @@
 #include "exprs/binary.hh"
 
 UnaryExpr::UnaryExpr(enum Type type) {
-  if (type != Type::kExist && type != Type::kNeg && type != Type::kUniversal) {
+  if (!IsUnary(type)) {
     SetError();
     return;
   }
