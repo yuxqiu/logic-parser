@@ -10,7 +10,6 @@
 auto PrintParserInformation(std::ostream &out,
                             const Parser::ParserOutput &parser_out) -> void {
   const Parser::ParseResult result = parser_out.Result();
-  const std::string &line = parser_out.Formula().Description();
   const Formula &formula = parser_out.Formula();
 
   if (result == Parser::ParseResult::kNotAFormula) {
@@ -18,6 +17,7 @@ auto PrintParserInformation(std::ostream &out,
     return;
   }
 
+  const std::string &line = parser_out.Formula().Description();
   if (result == Parser::ParseResult::kProposition) {
     if (Expr::IsLiteral(formula.Type())) {
       out << line << " is a proposition." << std::endl;

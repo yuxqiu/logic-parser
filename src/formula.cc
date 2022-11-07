@@ -52,15 +52,14 @@ auto Formula::Description() const -> std::string {
   while (!stack.empty()) {
     auto &[expr, num] = stack.top();
 
+    Expr::Description(expr, out, num);
     if (num >= expr->ChildrenSize()) {
-      Expr::Description(expr, out, num);
       stack.pop();
       continue;
     }
 
     // Only BinaryExpr falls into this case
     // because it has ChildrenSize == 2
-    Expr::Description(expr, out, num);
     ExpandLeft(stack, out, expr->ViewChildren()[num].get());
     ++num;
   }

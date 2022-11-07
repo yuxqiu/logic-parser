@@ -83,6 +83,7 @@ auto Parser::MergeStack(ExprStack &stack) -> void {
     if (stack.top()->Error()) {
       stack.emplace(std::move(expr));
       stack.SetError();
+      return;
     }
   }
 
@@ -98,7 +99,7 @@ auto Parser::MergeStack(ExprStack &stack) -> void {
     if (stack.top()->Error()) {
       stack.emplace(std::move(expr));
       stack.SetError();
-      break;
+      return;
     }
   }
 }
