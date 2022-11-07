@@ -13,9 +13,6 @@
 
 TableauFormula::TableauFormula(const Formula &formula) : Formula(formula) {}
 
-TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
-    : Formula(std::move(expr)) {}
-
 [[nodiscard]] auto TableauFormula::Expand(ConstantManager &manager)
     -> std::vector<std::vector<TableauFormula>> {
   Token token;
@@ -57,7 +54,7 @@ TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
     std::vector<TableauFormula> formulas;
     formulas.reserve(one_expansion.size());
     for (auto &new_formula : one_expansion) {
-      formulas.emplace_back(std::move(new_formula));
+      formulas.emplace_back(Formula{std::move(new_formula)});
     }
     ret.emplace_back(std::move(formulas));
   }
@@ -68,8 +65,7 @@ TableauFormula::TableauFormula(std::shared_ptr<Expr> expr)
 static auto Flatten(std::vector<Expr *> &flatten,
                     std::vector<uint64_t> &parents,
                     std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
-                    const std::shared_ptr<Expr> &expr, const Token &src)
-    -> void {
+                    const Token &src) -> void {
   for (std::vector<std::vector<Expr>>::size_type i = 1; i < flatten.size();
        ++i) {
     if (!to_merge[i].empty()) {
@@ -87,7 +83,7 @@ static auto Flatten(std::vector<Expr *> &flatten,
           (*it)->Infos()[0] == src) {
         // If var is bounded by new quantifier, store it to to_merge directly
         // we will then merge it by checking the same condition
-        to_merge.back().emplace_back(expr);
+        to_merge.back().emplace_back(*it);
       }
     }
   }
@@ -146,7 +142,7 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
   }
 
   // Flatten the AST
-  Flatten(flatten, parents, to_merge, expr, src);
+  Flatten(flatten, parents, to_merge, src);
 
   assert(to_merge.size() == flatten.size());
 
