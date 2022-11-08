@@ -118,13 +118,11 @@ auto main(int argc, char *argv[]) -> int {
     }
   }
 
-  if (!parse) {
-    return 0;
-  }
-
   while (std::getline(file, line)) {
     const auto parse_out = Parser::Parse(line);
-    PrintParserInformation(std::cout, parse_out);
+    if (parse) {
+      PrintParserInformation(std::cout, parse_out);
+    }
     if (solve) {
       if (parse_out.Result() == Parser::ParseResult::kNotAFormula) {
         PrintParserInformation(std::cout, parse_out);

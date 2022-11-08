@@ -188,8 +188,8 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
     // If we are negating literal, we return Neg+Literal
     // by the definition of literals in Tableau
     if (children->Type() == Expr::Type::kLiteral) {
-      return {{std::make_shared<UnaryExpr>(Expr::Type::kNeg,
-                                           expr->ViewChildren()[0])}};
+      return {
+          {std::make_shared<UnaryExpr>(Expr::Type::kNeg, std::move(children))}};
     }
 
     // If Unary
