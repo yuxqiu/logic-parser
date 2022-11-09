@@ -1,0 +1,14 @@
+PARSE SAT
+(p^P(x,y))
+-P(x,x)
+(pvq
+(p>(q^p)
+((ExP(x,x)^EyP(y, y))^AxP(x,x))
+(((ExP(x,x)^EyP(y,y))^EzQ(z,z))^ExR(x,x))
+(ExP(x,x)^AyEx-P(x, y))
+AxP(x,x)
+ExP(x,x)
+ExAyP(x,y)
+AxAyP(x,y)
+Ax(P(x,x)vEyAxQ(y,x))
+AxP(x,x)

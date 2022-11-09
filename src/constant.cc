@@ -8,9 +8,9 @@ auto ConstantManager::GetConsts(uint64_t num) -> std::optional<Token> {
   //
   // In this case, we generate a new constant instead
   // and see if the generated theory will be closed (or open)
-  if (generated_constants_.empty()) {
-    AddConst();
-  }
+  // if (generated_constants_.empty()) {
+  //   AddConst();
+  // }
 
   if (num >= generated_constants_.size()) {
     return {};
