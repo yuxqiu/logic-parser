@@ -241,6 +241,13 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
   return {};
 }
 
+auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool {
+  if (lhs.Type() == rhs.Type() && lhs.Type() == Expr::Type::kUniversal) {
+    return lhs.const_num_ > rhs.const_num_;
+  }
+  return lhs.Type() > rhs.Type();
+}
+
 Theory::Theory(const TableauFormula &formula) { Append(formula); }
 
 auto Theory::Undecidable() const -> bool { return undecidable_; }
@@ -292,8 +299,22 @@ auto Theory::TryExpand() -> std::vector<Theory> {
     // in our priority_queue, existential quantifier always come before
     // universal
     auto expansions = formula.Expand(manager_);
+
+    /*
+      After trying to expand there are only three possibilities:
+        - we could expand
+        - we could not expand because reaching constant limit (formula.Type() ==
+      kExists)
+        - we could not expand because universal formula uses all the available
+      consts
+
+      In the second case, we need to mark our theory as undecidable
+    */
     if (expansions.empty()) {
-      continue;
+      if (formula.Type() == Expr::Type::kExist) {
+        undecidable_ = true;
+      }
+      break;
     }
 
     std::vector<Theory> new_theories;
@@ -314,19 +335,6 @@ auto Theory::TryExpand() -> std::vector<Theory> {
     }
 
     return new_theories;
-  }
-
-  /*
-    After consuming all the formulas, there are only two possibilities:
-      - we could not expand because no more constant is available (but we could
-        have more)
-      - we reach the constant limit
-
-    In the second case, we need to mark our theory as undecidable
-  */
-  if (formulas_.empty() && !manager_.CanAddConst()) {
-    // we cannot decide its satisfiability
-    undecidable_ = true;
   }
 
   return {};

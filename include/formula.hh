@@ -33,8 +33,4 @@ private:
   static auto ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
                          std::string &out, Expr *expr) -> void;
   auto ReleaseResources() -> void;
-
-  friend auto operator>(const Formula &lhs, const Formula &rhs) -> bool;
 };
-
-auto operator>(const Formula &lhs, const Formula &rhs) -> bool;

@@ -109,7 +109,3 @@ auto Formula::ReleaseResources() -> void {
 }
 
 Formula::~Formula() { ReleaseResources(); }
-
-auto operator>(const Formula &lhs, const Formula &rhs) -> bool {
-  return lhs.Type() > rhs.Type();
-}
