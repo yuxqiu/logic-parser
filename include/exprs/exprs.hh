@@ -76,8 +76,5 @@ protected:
 private:
   bool error_{false};
 
-  friend auto operator<(const Expr &lhs, const Expr &rhs) -> bool;
   friend class Formula;
 };
-
-auto operator<(const Expr &lhs, const Expr &rhs) -> bool;

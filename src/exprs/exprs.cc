@@ -60,10 +60,6 @@ assert(false);
 return Type::kNull;
 }
 
-auto operator<(const Expr &lhs, const Expr &rhs) -> bool {
-  return lhs.type_ < rhs.type_;
-}
-
 auto Expr::TypeToString(enum Expr::Type type) -> std::string {
   switch (type) {
   case Expr::Type::kAnd:
