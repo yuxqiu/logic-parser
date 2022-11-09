@@ -28,7 +28,8 @@ private:
                                    const Token &token)
       -> std::vector<std::vector<std::shared_ptr<Expr>>>;
 
-  friend auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool;
+  friend auto operator>(const TableauFormula &lhs, const TableauFormula &rhs)
+      -> bool;
 };
 
 auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool;

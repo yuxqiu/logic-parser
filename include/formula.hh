@@ -17,7 +17,12 @@ public:
   // the destructor follows the semantics of ref_count
   explicit Formula() = default;
   explicit Formula(std::shared_ptr<Expr> expr);
+
   ~Formula();
+  Formula(const Formula &) = default;
+  Formula(Formula &&) = default;
+  auto operator=(const Formula &) -> Formula & = default;
+  auto operator=(Formula &&) -> Formula & = default;
 
   [[nodiscard]] auto Type() const -> enum Expr::Type;
 
