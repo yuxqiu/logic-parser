@@ -61,46 +61,39 @@ auto Parser::ExprStack::Error() const -> bool { return error_; }
 
 auto Parser::ExprStack::SetError() -> void { error_ = true; }
 
+auto Parser::ExprStack::Holder() -> std::shared_ptr<Expr> & { return holder_; }
+
+auto Parser::ExprStack::Merge() -> void {
+  auto expr = std::move(top());
+  pop();
+
+  if (empty()) {
+    if (holder_) {
+      SetError();
+    } else {
+      holder_ = std::move(expr);
+    }
+  } else {
+    top()->Append(expr);
+    if (top()->Error()) {
+      emplace(std::move(expr));
+      SetError();
+    }
+  }
+}
+
+auto Parser::ExprStack::MergeStack() -> void {
+  Merge();
+  while (!empty() && !Error() && !Expr::IsBinary(top()->Type()) &&
+         top()->Complete()) {
+    Merge();
+  }
+}
+
 Parser::ExprStack::~ExprStack() {
   while (!empty()) {
     const Formula destructed_formula{std::move(top())};
     pop();
-  }
-}
-
-/**
- * On success, return true; if encounter any error during merging, return false
- */
-auto Parser::MergeStack(ExprStack &stack) -> void {
-  // First merge always come from 1) a ')' or 2) a literal
-  // This can always be merged
-  if (stack.size() > 1 && stack.top()->Complete()) {
-    std::shared_ptr<Expr> expr = std::move(stack.top());
-    stack.pop();
-    stack.top()->Append(expr);
-
-    // If Merge Error, place expr back and mark error
-    if (stack.top()->Error()) {
-      stack.emplace(std::move(expr));
-      stack.SetError();
-      return;
-    }
-  }
-
-  // If we want to continue to merge,
-  // we need to ensure we do not eliminate other BinaryConnective
-  while (stack.size() > 1 && stack.top()->Complete() &&
-         !Expr::IsBinary(stack.top()->Type())) {
-    std::shared_ptr<Expr> expr = std::move(stack.top());
-    stack.pop();
-    stack.top()->Append(expr);
-
-    // If Merge Error, place expr back and mark error
-    if (stack.top()->Error()) {
-      stack.emplace(std::move(expr));
-      stack.SetError();
-      return;
-    }
   }
 }
 
@@ -127,7 +120,7 @@ auto Parser::ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
   }
 
   // we can merge at least one level of the stack
-  MergeStack(stack);
+  stack.MergeStack();
 }
 
 auto Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
@@ -162,7 +155,7 @@ auto Parser::ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer,
   (void)tokenizer;
   // If Literal => create a new literal
   stack.emplace(std::make_shared<Literal>(std::move(token)));
-  MergeStack(stack);
+  stack.MergeStack();
 }
 
 auto Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
@@ -218,7 +211,7 @@ auto Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
   stack.emplace(std::make_shared<PredicateLiteral>(std::move(token),
                                                    std::move(token_holder[1]),
                                                    std::move(token_holder[3])));
-  MergeStack(stack);
+  stack.MergeStack();
 }
 
 auto Parser::Parse(std::string line) -> ParserOutput {
@@ -303,12 +296,12 @@ auto Parser::Parse(std::string line) -> ParserOutput {
       - top formula is not complete (missing symbol - incorrect syntax)
       - top formula is in error (unmatched symbol - incorrect syntax)
   */
-  if (stack.Error() || stack.size() != 1 || (proposition == predicate) ||
-      !stack.top()->Complete() || stack.top()->Error()) {
+  auto expr = stack.Holder();
+  if (stack.Error() || !stack.empty() || (proposition == predicate) || !expr) {
     return ParserOutput{Formula{}, std::move(line), ParseResult::kNotAFormula};
   }
 
-  return ParserOutput{Formula{std::move(stack.top())}, std::move(line),
+  return ParserOutput{Formula{std::move(expr)}, std::move(line),
                       proposition ? ParseResult::kProposition
                                   : ParseResult::kPredicate};
 }
