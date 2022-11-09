@@ -8,6 +8,7 @@ class Literal : public Expr {
 public:
   explicit Literal(Token val);
   ~Literal() override = default;
+  Literal(Literal &&) = default;
 
   auto Append(std::shared_ptr<Expr> expr) -> void override;
   auto Append(enum Type type) -> void override;
@@ -27,6 +28,7 @@ class PredicateLiteral : public Literal {
 public:
   explicit PredicateLiteral(Token val, Token left_var_, Token right_var_);
   ~PredicateLiteral() override = default;
+  PredicateLiteral(PredicateLiteral &&) = default;
 
   [[nodiscard]] auto Infos() const -> std::vector<Token> override;
 
