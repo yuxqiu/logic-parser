@@ -1,2 +1,1 @@
 PARSE SAT
-(ExAyP(x,y)>AxEyP(y,x))
