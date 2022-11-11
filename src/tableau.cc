@@ -193,22 +193,20 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
     }
 
     // If Unary
-    if (Expr::IsUnary(children->Type())) {
-      // If Neg, we skip the double Negation
-      if (children->Type() == Expr::Type::kNeg) {
-        return {{std::move(children->ViewChildren()[0])}};
-      }
-      // Otherwise, we negate the Quantified Formula based on their rule
-      if (children->Type() == Expr::Type::kExist ||
-          children->Type() == Expr::Type::kUniversal) {
-        std::vector infos = children->Infos();
-        assert(infos.size() == 1);
+    // If Neg, we skip the double Negation
+    if (children->Type() == Expr::Type::kNeg) {
+      return {{std::move(children->ViewChildren()[0])}};
+    }
+    // Otherwise, we negate the Quantified Formula based on their rule
+    if (children->Type() == Expr::Type::kExist ||
+        children->Type() == Expr::Type::kUniversal) {
+      std::vector infos = children->Infos();
+      assert(infos.size() == 1);
 
-        return {{std::make_shared<QuantifiedUnaryExpr>(
-            Expr::Negate(children->Type()), std::move(infos[0]),
-            std::make_shared<UnaryExpr>(
-                Expr::Type::kNeg, std::move(children->ViewChildren()[0])))}};
-      }
+      return {{std::make_shared<QuantifiedUnaryExpr>(
+          Expr::Negate(children->Type()), std::move(infos[0]),
+          std::make_shared<UnaryExpr>(
+              Expr::Type::kNeg, std::move(children->ViewChildren()[0])))}};
     }
 
     // If Binary => we negate them based on their rules
@@ -259,7 +257,7 @@ auto Theory::Close() const -> bool { return close_; }
 // structure
 auto Theory::Append(const TableauFormula &formula) -> void {
   if (formula.Type() ==
-      Expr::Type::kLiteral) { // if tableau literal => to literal or neg_literal
+      Expr::Type::kLiteral) { // if tableau literal => literal or neg_literal
     // use description to deal with prop literal and pred literal
     auto literal = formula.Description();
     if (neg_literals_.find(Token{literal}) != neg_literals_.end()) {
@@ -285,59 +283,55 @@ auto Theory::Append(const TableauFormula &formula) -> void {
 }
 
 auto Theory::TryExpand() -> std::vector<Theory> {
-  // only Quantified Formula can yield empty
-  while (!formulas_.empty()) {
-    auto formula = formulas_.top();
-    formulas_.pop();
-
-    // Try expanding the formula, if we cannot expand
-    //  - no more constants
-    //  - reach constant limits
-    // we continue to try next one, and drop the current one
-    //
-    // We can safely drop even in the second condition because
-    // in our priority_queue, existential quantifier always come before
-    // universal
-    auto expansions = formula.Expand(manager_);
-
-    /*
-      After trying to expand there are only three possibilities:
-        - we could expand
-        - we could not expand because reaching constant limit (formula.Type() ==
-      kExists)
-        - we could not expand because universal formula uses all the available
-      consts
-
-      In the second case, we need to mark our theory as undecidable
-    */
-    if (expansions.empty()) {
-      if (formula.Type() == Expr::Type::kExist) {
-        undecidable_ = true;
-      }
-      break;
-    }
-
-    std::vector<Theory> new_theories;
-    new_theories.reserve(expansions.size());
-
-    for (auto &expansion : expansions) {
-      Theory new_theory = *this;
-      for (const auto &new_formula : expansion) {
-        new_theory.Append(new_formula);
-      }
-
-      // Gamma formula needs to be added back to the Theory
-      if (formula.Type() == Expr::Type::kUniversal) {
-        new_theory.Append(formula);
-      }
-
-      new_theories.emplace_back(std::move(new_theory));
-    }
-
-    return new_theories;
+  if (formulas_.empty()) {
+    return {};
   }
 
-  return {};
+  auto formula = formulas_.top();
+  formulas_.pop();
+
+  // Try expanding the formula, if we cannot expand
+  //  - reach constant limits
+  //  - no more available const for universal formula
+  auto expansions = formula.Expand(manager_);
+
+  /*
+    After trying to expand there are only three possibilities:
+      - we could expand
+      - we could not expand because reaching constant limit (formula.Type() ==
+    kExists)
+      - we could not expand because universal formula uses all the available
+    consts
+        - no way for other possible A to generate more consts because the A
+          is pop-ed based on their const_num
+
+    In the second case, we need to mark our theory as undecidable
+  */
+  if (expansions.empty()) {
+    if (formula.Type() == Expr::Type::kExist) {
+      undecidable_ = true;
+    }
+    return {};
+  }
+
+  std::vector<Theory> new_theories;
+  new_theories.reserve(expansions.size());
+
+  for (auto &expansion : expansions) {
+    Theory new_theory = *this;
+    for (const auto &new_formula : expansion) {
+      new_theory.Append(new_formula);
+    }
+
+    // Gamma formula needs to be added back to the Theory
+    if (formula.Type() == Expr::Type::kUniversal) {
+      new_theory.Append(formula);
+    }
+
+    new_theories.emplace_back(std::move(new_theory));
+  }
+
+  return new_theories;
 }
 
 auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
