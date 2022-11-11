@@ -63,30 +63,30 @@ auto Parser::ExprStack::SetError() -> void { error_ = true; }
 
 auto Parser::ExprStack::Holder() -> std::shared_ptr<Expr> & { return holder_; }
 
-auto Parser::ExprStack::Merge() -> void {
-  auto expr = std::move(top());
-  pop();
+auto Parser::Merge(ExprStack &stack) -> void {
+  auto expr = std::move(stack.top());
+  stack.pop();
 
-  if (empty()) {
-    if (holder_) {
-      SetError();
+  if (stack.empty()) {
+    if (stack.Holder()) {
+      stack.SetError();
     } else {
-      holder_ = std::move(expr);
+      stack.Holder() = std::move(expr);
     }
   } else {
-    top()->Append(expr);
-    if (top()->Error()) {
-      emplace(std::move(expr));
-      SetError();
+    stack.top()->Append(expr);
+    if (stack.top()->Error()) {
+      stack.emplace(std::move(expr));
+      stack.SetError();
     }
   }
 }
 
-auto Parser::ExprStack::MergeStack() -> void {
-  Merge();
-  while (!empty() && !Error() && !Expr::IsBinary(top()->Type()) &&
-         top()->Complete()) {
-    Merge();
+auto Parser::MergeStack(ExprStack &stack) -> void {
+  Merge(stack);
+  while (!stack.empty() && !stack.Error() &&
+         !Expr::IsBinary(stack.top()->Type()) && stack.top()->Complete()) {
+    Merge(stack);
   }
 }
 
@@ -120,7 +120,7 @@ auto Parser::ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
   }
 
   // we can merge at least one level of the stack
-  stack.MergeStack();
+  MergeStack(stack);
 }
 
 auto Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
@@ -155,7 +155,7 @@ auto Parser::ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer,
   (void)tokenizer;
   // If Literal => create a new literal
   stack.emplace(std::make_shared<Literal>(std::move(token)));
-  stack.MergeStack();
+  MergeStack(stack);
 }
 
 auto Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
@@ -211,7 +211,7 @@ auto Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
   stack.emplace(std::make_shared<PredicateLiteral>(std::move(token),
                                                    std::move(token_holder[1]),
                                                    std::move(token_holder[3])));
-  stack.MergeStack();
+  MergeStack(stack);
 }
 
 auto Parser::Parse(std::string line) -> ParserOutput {

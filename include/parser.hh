@@ -37,11 +37,8 @@ private:
     auto SetError() -> void;
 
     auto Holder() -> std::shared_ptr<Expr> &;
-    auto MergeStack() -> void;
 
   private:
-    auto Merge() -> void;
-
     std::shared_ptr<Expr> holder_{};
     bool error_{false};
   };
@@ -60,4 +57,7 @@ private:
                                     Token &token) -> void;
   static auto ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
                                       Token &token) -> void;
+
+  static auto Merge(ExprStack &stack) -> void;
+  static auto MergeStack(ExprStack &stack) -> void;
 };
