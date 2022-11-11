@@ -1,3 +1,7 @@
 PARSE SAT
 (ExAyP(x,y)>AxEyP(y,x))
 Ax(P(x,x)^-P(x,x))
+(Ax(P(x,x)v-P(x,x))>Ax(P(x,x)^-P(x,x))) -- sat if allow empty model
+(Ax(P(x,x)>P(x,x))>Ax(P(x,x)^-P(x,x))) -- same as above
+(ExP(x,x)^AyExP(x,x)) -- if un-used Ax is dropped, this is satisfiable; otherwise, may
+Ex(P(x,x)^AyEzP(x,y)) -- sat if Ez can be dropped; otherwise, may

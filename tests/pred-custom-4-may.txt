@@ -1,1 +1,4 @@
 PARSE SAT
+Ex(P(x,x)^AyEzEx-P(x,y))
+(ExP(x,x)^AyEx-P(x,y))
+(AxExQ(x,x)^(ExQ(x,x)vExQ(x,x)))
