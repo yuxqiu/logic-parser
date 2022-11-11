@@ -8,11 +8,7 @@
 
 class ConstantManager {
 public:
-  // If number is >= generated_constants_.size() or is >= klimit
-  // return nullopt
-  //
-  // Generate a new const if currently there is no const
-  // Vacuously true is not allowed in our SAT system
+  // If number is >= generated_constants_.size() return nullopt
   [[nodiscard]] auto GetConsts(uint64_t num) -> std::optional<Token>;
 
   // If we can add more const
