@@ -2,11 +2,11 @@
 # 1. Main object files "export" functions that are linked by other object files
 
 # compilers and constant flags
-CC = g++
+CC = c++
 CFLAGS = -Wall -Werror -Wextra -Wpedantic -Wextra-semi -Wnull-dereference -Wsuggest-override -Wconversion -Wshadow -std=c++17
 
 # a list of dirs that has src code
-DIRS = src test
+DIRS = src test lib
 
 # file that we want to match
 EXT = cc
@@ -15,27 +15,45 @@ EXT = cc
 OUTPUT_EXT = out
 
 # dependency
-INC = -Iinclude
+INC = -Iinclude -Ilib
 
+# build dir
 BASE_BUILDDIR = build
 BASE_TARGETDIR = bin
-TARGETDIR = $(BASE_TARGETDIR)/release
-BUILDDIR = $(BASE_BUILDDIR)/release
-CDFLAGS = -O2 -DNDEBUG
+
+# flags
+CDFLAGS =
 LDFLAGS =
 
-# debug mode
-ifeq ($(debug), 1)
-	TARGETDIR = $(BASE_TARGETDIR)/debug
-	BUILDDIR = $(BASE_BUILDDIR)/debug
-	CDFLAGS = -Og -g -DDEBUG
+# define where to store generated file
+DEBUG = debug
+RELEASE = release
+
+# release mode
+ifeq ($(release), 1)
+	TARGETDIR = $(BASE_TARGETDIR)/$(RELEASE)
+	BUILDDIR = $(BASE_BUILDDIR)/$(RELEASE)
+	CDFLAGS := $(CDFLAGS) -O2 -DNDEBUG
+	LDFLAGS := $(LDFLAGS)
+else
+	TARGETDIR = $(BASE_TARGETDIR)/$(DEBUG)
+	BUILDDIR = $(BASE_BUILDDIR)/$(DEBUG)
+	CDFLAGS := $(CDFLAGS) -g -DDEBUG
 
 	ifneq ($(OS),Windows_NT)
-	CDFLAGS := $(CDFLAGS) -fsanitize=address,undefined
-	LDFLAGS := $(LDFLAGS) -fsanitize=address,undefined
+		CDFLAGS := $(CDFLAGS) -fsanitize=address,undefined
+		LDFLAGS := $(LDFLAGS) -fsanitize=address,undefined
 	endif
 endif
 
+# if profile=1 in OSX
+ifeq ($(shell uname -s),Darwin)
+	ifeq ($(profile), 1)
+		LDFLAGS := $(LDFLAGS) -L$(shell brew --prefix gperftools)/lib -lprofiler
+	endif
+endif
+
+# match all source files
 rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
 SOURCES = $(call rwildcard,.,*.$(EXT))
@@ -92,8 +110,4 @@ leaks:
 	@$(foreach file, $(call rwildcard,$(TARGETDIR),*.$(OUTPUT_EXT)),  leaks -atExit -- ./$(file);)
 
 
-sanitizer:
-	@$(foreach file, $(call rwildcard,$(TARGETDIR),*.$(OUTPUT_EXT)),  ./$(file);)
-
-
-.PHONY: clean run valgrind leaks sanitizer
+.PHONY: clean run valgrind leaks
