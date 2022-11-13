@@ -3,6 +3,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <cassert>
 
 #include "parser.hh"
 #include "tableau.hh"
