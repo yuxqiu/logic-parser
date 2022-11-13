@@ -129,6 +129,8 @@ static auto Merge(const Token &src, std::vector<Expr *> &flatten,
 
 static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
                            const Token &dst) -> std::shared_ptr<Expr> {
+  // Potential Optimization Here
+  // Encapsulate them inside a struct is better for locality
   std::vector<Expr *> flatten{{}, expr.get()};
   std::vector<uint64_t> parents{0, 0};
   std::vector<std::vector<std::shared_ptr<Expr>>> to_merge{{}, {}};
