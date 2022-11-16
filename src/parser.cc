@@ -1,9 +1,9 @@
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <map>
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "expr.hh"
 #include "formula.hh"
@@ -11,33 +11,33 @@
 #include "tokenizer.hh"
 
 // Basic Infos
-const std::vector<Token> kLeftParenthesisAll = {Token{"("}};
-const std::vector<Token> kRightParenthesisAll = {Token{")"}};
+const static std::array kLeftParenthesisAll = {Token{"("}};
+const static std::array kRightParenthesisAll = {Token{")"}};
 
-const std::vector<Token> kBinaryAll = {Token{"^"}, Token{"v"}, Token{">"}};
-const std::map<Token, enum Expr::Type> kBinaryAllToType = {
+const static std::array kBinaryAll = {Token{"^"}, Token{"v"}, Token{">"}};
+const static std::map<Token, enum Expr::Type> kBinaryAllToType = {
     {Token{"^"}, Expr::Type::kAnd},
     {Token{"v"}, Expr::Type::kOr},
     {Token{">"}, Expr::Type::kImpl}};
 
 // Prop Starts
-const std::vector<Token> kUnaryProp = {Token{"-"}};
-const std::map<Token, enum Expr::Type> kUnaryPropToType = {
+const static std::array kUnaryProp = {Token{"-"}};
+const static std::map<Token, enum Expr::Type> kUnaryPropToType = {
     {Token{"-"}, Expr::Type::kNeg}};
 
-const std::vector<Token> kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
-                                         Token{"s"}};
+const static std::array kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
+                                        Token{"s"}};
 // Prop Ends
 
 // Predicate Starts
-const std::vector<Token> kUnaryPredicate = {Token{"E"}, Token{"A"}};
-const std::map<Token, enum Expr::Type> kUnaryPredicateToType = {
+const static std::array kUnaryPredicate = {Token{"E"}, Token{"A"}};
+const static std::map<Token, enum Expr::Type> kUnaryPredicateToType = {
     {Token{"E"}, Expr::Type::kExist}, {Token{"A"}, Expr::Type::kUniversal}};
 
-const std::vector<Token> kLiteralPredicate = {Token{"P"}, Token{"Q"},
-                                              Token{"R"}, Token{"S"}};
-const std::vector<Token> kVarPredicate = {Token{"x"}, Token{"y"}, Token{"z"},
-                                          Token{"w"}};
+const static std::array kLiteralPredicate = {Token{"P"}, Token{"Q"}, Token{"R"},
+                                             Token{"S"}};
+const static std::array kVarPredicate = {Token{"x"}, Token{"y"}, Token{"z"},
+                                         Token{"w"}};
 // Predicate Ends
 
 auto Parser::ParserOutput::Formula() -> class Formula & { return formula_; }
@@ -179,17 +179,16 @@ auto Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
 auto Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
                                      Token &token) -> void {
   (void)tokenizer;
-  std::vector<Token> token_holder;
-  token_holder.reserve(5);
+  std::array<Token, 5> token_holder;
 
   // Hard coded way to process Predicate Formulas
-  for (int i = 0; i < 5; ++i) {
+  for (std::array<Token, 5>::size_type i = 0; i < 5; ++i) {
     if (tokenizer.Empty()) {
       stack.SetError();
       return;
     }
 
-    token_holder.emplace_back(tokenizer.PeekToken());
+    token_holder[i] = tokenizer.PeekToken();
     tokenizer.PopToken();
   }
 
