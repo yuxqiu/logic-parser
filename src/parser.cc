@@ -52,10 +52,10 @@ auto Parser::ParserOutput::RawFormula() const -> const std::string & {
 
 auto Parser::ParserOutput::Result() const -> ParseResult { return result_; }
 
-Parser::ParserOutput::ParserOutput(class Formula &&owner,
-                                   std::string &&raw_formula,
+Parser::ParserOutput::ParserOutput(class Formula owner, std::string raw_formula,
                                    ParseResult result)
-    : formula_(owner), raw_formula_(raw_formula), result_(result) {}
+    : formula_(std::move(owner)), raw_formula_(std::move(raw_formula)),
+      result_(result) {}
 
 auto Parser::ExprStack::Error() const -> bool { return error_; }
 
@@ -146,7 +146,7 @@ auto Parser::ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
                               Token &token) -> void {
   (void)tokenizer;
   // If UnaryProp (-) => create a new Unary Expr
-  enum Expr::Type type = kUnaryPropToType.at(token);
+  const enum Expr::Type type = kUnaryPropToType.at(token);
   stack.emplace(std::make_shared<UnaryExpr>(type));
 }
 

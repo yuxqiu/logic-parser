@@ -10,7 +10,7 @@ public:
   [[nodiscard]] auto ToString() const -> std::string;
 
 private:
-  std::string token_;
+  std::string token_{};
 
   friend auto operator<(const Token &lhs, const Token &rhs) -> bool;
   friend auto operator==(const Token &lhs, const Token &rhs) -> bool;

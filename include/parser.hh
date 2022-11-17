@@ -12,7 +12,7 @@ public:
 
   class ParserOutput {
   public:
-    explicit ParserOutput(Formula &&owner, std::string &&raw_formula,
+    explicit ParserOutput(Formula owner, std::string raw_formula,
                           ParseResult result);
 
     [[nodiscard]] auto Formula() -> Formula &;

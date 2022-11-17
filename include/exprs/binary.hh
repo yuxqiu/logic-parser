@@ -7,7 +7,6 @@ public:
   BinaryExpr() = default;
   explicit BinaryExpr(enum Type type, std::shared_ptr<Expr> expr_lhs,
                       std::shared_ptr<Expr> expr_rhs);
-  ~BinaryExpr() override = default;
 
   auto Append(std::shared_ptr<Expr> expr) -> void override;
   auto Append(enum Type type) -> void override;

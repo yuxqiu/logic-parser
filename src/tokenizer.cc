@@ -4,6 +4,8 @@
 
 #include "tokenizer.hh"
 
+const static std::string kWhitespaces = " \t\n\v\f\r";
+
 Token::Token(std::string token) : token_{std::move(token)} {}
 
 auto Token::ToString() const -> std::string { return token_; }
@@ -30,8 +32,7 @@ auto Tokenizer::PopToken() -> void {
 auto Tokenizer::Empty() const -> bool { return start_ == expr_.size(); }
 
 auto Tokenizer::ConsumeWhitespace() -> void {
-  const char *whitespaces = " \t\n\v\f\r";
-  start_ = expr_.find_first_not_of(whitespaces, start_);
+  start_ = expr_.find_first_not_of(kWhitespaces, start_);
   start_ = start_ == std::string::npos ? expr_.size() : start_;
 }
 

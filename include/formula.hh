@@ -32,10 +32,9 @@ public:
   [[nodiscard]] auto ViewChildren() const -> std::vector<Formula>;
 
 protected:
-  std::shared_ptr<Expr> expr_;
+  std::shared_ptr<Expr> expr_{};
 
 private:
   static auto ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
                          std::string &out, Expr *expr) -> void;
-  auto ReleaseResources() -> void;
 };

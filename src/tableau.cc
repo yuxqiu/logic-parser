@@ -53,7 +53,7 @@ TableauFormula::TableauFormula(const Formula &formula) : Formula(formula) {}
   for (auto &one_expansion : expansion) {
     std::vector<TableauFormula> formulas;
     formulas.reserve(one_expansion.size());
-    for (auto &new_formula : one_expansion) {
+    for (auto &&new_formula : one_expansion) {
       formulas.emplace_back(Formula{std::move(new_formula)});
     }
     ret.emplace_back(std::move(formulas));
@@ -365,7 +365,7 @@ auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
       return TableauResult::kSatisfiable;
     }
 
-    for (auto &new_theory : theories) {
+    for (auto &&new_theory : theories) {
       if (!new_theory.Close()) {
         queue.emplace_back(std::move(new_theory));
       }

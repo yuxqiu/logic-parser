@@ -45,7 +45,6 @@ public:
   virtual ~Expr() = default;
   Expr(const Expr &&) = delete;
   Expr(Expr &&) = delete;
-  // In case assignment causes the shared_ptr to recursively call the destructor
   auto operator=(const Expr &) -> Expr & = delete;
   auto operator=(Expr &&) -> Expr & = delete;
 

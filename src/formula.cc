@@ -73,7 +73,7 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
   std::vector children = expr_->ViewChildren();
   std::vector<Formula> ret;
   ret.reserve(children.size());
-  for (auto &expr : children) {
+  for (auto &&expr : children) {
     ret.emplace_back(std::move(expr));
   }
   return ret;
@@ -83,7 +83,7 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
   Relying on the destructor of Expr is dangerous, as it may
     - cause stack overflow if the Expr is long enough
 
-  ReleaseResources propose a iterative way to destruct all the formula
+  Destructor of Formula proposes a iterative way to destruct all the formula
   by using a deque
 
   It will only destruct the formula only if use_count of current formula is == 1
@@ -91,7 +91,7 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
     - if use_count > 1, some other Formulas are also managing this expr,
       so we don't need to destruct it
 */
-auto Formula::ReleaseResources() -> void {
+Formula::~Formula() {
   std::deque<std::shared_ptr<Expr>> destruct_queue;
   destruct_queue.emplace_back(std::move(expr_));
   while (!destruct_queue.empty()) {
@@ -101,11 +101,9 @@ auto Formula::ReleaseResources() -> void {
       // increment ref_count, so it will not be destroyed after front goes out
       // of scope
       auto children = front->ViewChildren();
-      for (std::shared_ptr<Expr> &expr : children) {
+      for (auto &&expr : children) {
         destruct_queue.emplace_back(std::move(expr));
       }
     }
   }
 }
-
-Formula::~Formula() { ReleaseResources(); }

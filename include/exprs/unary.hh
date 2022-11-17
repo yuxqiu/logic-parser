@@ -6,7 +6,6 @@ class UnaryExpr : public Expr {
 public:
   explicit UnaryExpr(enum Type type);
   explicit UnaryExpr(enum Type type, std::shared_ptr<Expr> expr);
-  ~UnaryExpr() override = default;
 
   auto Append(std::shared_ptr<Expr> expr) -> void override;
   auto Append(enum Type type) -> void override;
@@ -29,7 +28,6 @@ public:
   explicit QuantifiedUnaryExpr(enum Type type, Token var);
   explicit QuantifiedUnaryExpr(enum Type type, Token var,
                                std::shared_ptr<Expr> expr);
-  ~QuantifiedUnaryExpr() override = default;
 
   [[nodiscard]] auto Infos() const -> std::vector<Token> override;
 
