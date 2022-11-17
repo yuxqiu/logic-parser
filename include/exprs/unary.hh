@@ -7,13 +7,13 @@ public:
   explicit UnaryExpr(enum Type type);
   explicit UnaryExpr(enum Type type, std::shared_ptr<Expr> expr);
 
-  auto Append(std::shared_ptr<Expr> expr) -> void override;
-  auto Append(enum Type type) -> void override;
+  auto Append(std::shared_ptr<Expr> expr) -> void final;
+  auto Append(enum Type type) -> void final;
 
-  [[nodiscard]] auto Complete() const -> bool override;
+  [[nodiscard]] auto Complete() const -> bool final;
 
   [[nodiscard]] auto ViewChildren() const
-      -> std::vector<std::shared_ptr<Expr>> override;
+      -> std::vector<std::shared_ptr<Expr>> final;
 
   [[nodiscard]] auto Infos() const -> std::vector<Token> override;
 
@@ -29,7 +29,7 @@ public:
   explicit QuantifiedUnaryExpr(enum Type type, Token var,
                                std::shared_ptr<Expr> expr);
 
-  [[nodiscard]] auto Infos() const -> std::vector<Token> override;
+  [[nodiscard]] auto Infos() const -> std::vector<Token> final;
 
 private:
   Token var_;

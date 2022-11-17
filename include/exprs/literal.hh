@@ -8,13 +8,13 @@ class Literal : public Expr {
 public:
   explicit Literal(Token val);
 
-  auto Append(std::shared_ptr<Expr> expr) -> void override;
-  auto Append(enum Type type) -> void override;
+  auto Append(std::shared_ptr<Expr> expr) -> void final;
+  auto Append(enum Type type) -> void final;
 
-  [[nodiscard]] auto Complete() const -> bool override;
+  [[nodiscard]] auto Complete() const -> bool final;
 
   [[nodiscard]] auto ViewChildren() const
-      -> std::vector<std::shared_ptr<Expr>> override;
+      -> std::vector<std::shared_ptr<Expr>> final;
 
   [[nodiscard]] auto Infos() const -> std::vector<Token> override;
 
@@ -26,7 +26,7 @@ class PredicateLiteral : public Literal {
 public:
   explicit PredicateLiteral(Token val, Token left_var_, Token right_var_);
 
-  [[nodiscard]] auto Infos() const -> std::vector<Token> override;
+  [[nodiscard]] auto Infos() const -> std::vector<Token> final;
 
   Token left_var_, right_var_;
 };

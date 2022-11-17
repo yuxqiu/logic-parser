@@ -3,6 +3,7 @@
 #include <memory>
 #include <stack>
 
+#include "exprs/exprs.hh"
 #include "formula.hh"
 #include "tokenizer.hh"
 
@@ -29,9 +30,19 @@ public:
   [[nodiscard]] static auto Parse(std::string line) -> ParserOutput;
 
 private:
-  class ExprStack : public std::stack<std::shared_ptr<Expr>> {
+  class ExprStack : std::stack<std::shared_ptr<Expr>> {
   public:
+    using std::stack<std::shared_ptr<Expr>>::empty;
+    using std::stack<std::shared_ptr<Expr>>::top;
+    using std::stack<std::shared_ptr<Expr>>::pop;
+    using std::stack<std::shared_ptr<Expr>>::emplace;
+
+    ExprStack() = default;
     ~ExprStack();
+    ExprStack(const ExprStack &) = delete;
+    ExprStack(ExprStack &&) = delete;
+    auto operator=(const ExprStack &) -> ExprStack & = delete;
+    auto operator=(ExprStack &&) -> ExprStack & = delete;
 
     [[nodiscard]] auto Error() const -> bool;
     auto SetError() -> void;
