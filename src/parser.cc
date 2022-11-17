@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <map>
 #include <memory>
 #include <utility>
 
 #include "expr.hh"
+#include "exprs/exprs.hh"
 #include "formula.hh"
 #include "parser.hh"
 #include "tokenizer.hh"
@@ -15,15 +15,15 @@ const static std::array kLeftParenthesisAll = {Token{"("}};
 const static std::array kRightParenthesisAll = {Token{")"}};
 
 const static std::array kBinaryAll = {Token{"^"}, Token{"v"}, Token{">"}};
-const static std::map<Token, enum Expr::Type> kBinaryAllToType = {
-    {Token{"^"}, Expr::Type::kAnd},
-    {Token{"v"}, Expr::Type::kOr},
-    {Token{">"}, Expr::Type::kImpl}};
+const static std::array kBinaryAllToType = {
+    std::pair{Token{"^"}, Expr::Type::kAnd},
+    std::pair{Token{"v"}, Expr::Type::kOr},
+    std::pair{Token{">"}, Expr::Type::kImpl}};
 
 // Prop Starts
 const static std::array kUnaryProp = {Token{"-"}};
-const static std::map<Token, enum Expr::Type> kUnaryPropToType = {
-    {Token{"-"}, Expr::Type::kNeg}};
+const static std::array kUnaryPropToType = {
+    std::pair{Token{"-"}, Expr::Type::kNeg}};
 
 const static std::array kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
                                         Token{"s"}};
@@ -31,8 +31,9 @@ const static std::array kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
 
 // Predicate Starts
 const static std::array kUnaryPredicate = {Token{"E"}, Token{"A"}};
-const static std::map<Token, enum Expr::Type> kUnaryPredicateToType = {
-    {Token{"E"}, Expr::Type::kExist}, {Token{"A"}, Expr::Type::kUniversal}};
+const static std::array kUnaryPredicateToType = {
+    std::pair{Token{"E"}, Expr::Type::kExist},
+    std::pair{Token{"A"}, Expr::Type::kUniversal}};
 
 const static std::array kLiteralPredicate = {Token{"P"}, Token{"Q"}, Token{"R"},
                                              Token{"S"}};
@@ -134,7 +135,12 @@ auto Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
     return;
   }
 
-  const enum Expr::Type type = kBinaryAllToType.at(token);
+  const enum Expr::Type type =
+      std::find_if(kBinaryAllToType.begin(), kBinaryAllToType.end(),
+                   [&token](const std::pair<Token, enum Expr::Type> &lhs) {
+                     return lhs.first == token;
+                   })
+          ->second;
 
   // If the BinaryExpr cannot be added to the top formula
   // e.g. top is a Literal/Unary
@@ -146,7 +152,12 @@ auto Parser::ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
                               Token &token) -> void {
   (void)tokenizer;
   // If UnaryProp (-) => create a new Unary Expr
-  const enum Expr::Type type = kUnaryPropToType.at(token);
+  const enum Expr::Type type =
+      std::find_if(kUnaryPropToType.begin(), kUnaryPropToType.end(),
+                   [&token](const std::pair<Token, enum Expr::Type> &lhs) {
+                     return lhs.first == token;
+                   })
+          ->second;
   stack.emplace(std::make_shared<UnaryExpr>(type));
 }
 
@@ -172,7 +183,12 @@ auto Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
   }
 
   stack.emplace(std::make_shared<QuantifiedUnaryExpr>(
-      kUnaryPredicateToType.at(token), std::move(next_token)));
+      std::find_if(kUnaryPredicateToType.begin(), kUnaryPredicateToType.end(),
+                   [&token](const std::pair<Token, enum Expr::Type> &lhs) {
+                     return lhs.first == token;
+                   })
+          ->second,
+      std::move(next_token)));
 }
 
 // Process formulas like P(x,y)
