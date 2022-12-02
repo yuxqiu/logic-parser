@@ -41,29 +41,6 @@ const static std::array kVarPredicate = {Token{"x"}, Token{"y"}, Token{"z"},
                                          Token{"w"}};
 // Predicate Ends
 
-auto Parser::ParserOutput::Formula() -> class Formula & { return formula_; }
-
-auto Parser::ParserOutput::Formula() const -> const class Formula & {
-  return formula_;
-}
-
-auto Parser::ParserOutput::RawFormula() const -> const std::string & {
-  return raw_formula_;
-}
-
-auto Parser::ParserOutput::Result() const -> ParseResult { return result_; }
-
-Parser::ParserOutput::ParserOutput(class Formula owner, std::string raw_formula,
-                                   ParseResult result)
-    : formula_(std::move(owner)), raw_formula_(std::move(raw_formula)),
-      result_(result) {}
-
-auto Parser::ExprStack::Error() const -> bool { return error_; }
-
-auto Parser::ExprStack::SetError() -> void { error_ = true; }
-
-auto Parser::ExprStack::Holder() -> std::shared_ptr<Expr> & { return holder_; }
-
 auto Parser::Merge(ExprStack &stack) -> void {
   auto expr = std::move(stack.top());
   stack.pop();

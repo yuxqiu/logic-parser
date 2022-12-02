@@ -14,12 +14,18 @@ public:
   class ParserOutput {
   public:
     explicit ParserOutput(Formula owner, std::string raw_formula,
-                          ParseResult result);
+                          ParseResult result)
+        : formula_(std::move(owner)), raw_formula_(std::move(raw_formula)),
+          result_(result) {}
 
-    [[nodiscard]] auto Formula() -> Formula &;
-    [[nodiscard]] auto Formula() const -> const class Formula &;
-    [[nodiscard]] auto RawFormula() const -> const std::string &;
-    [[nodiscard]] auto Result() const -> ParseResult;
+    [[nodiscard]] auto Formula() -> Formula & { return formula_; }
+    [[nodiscard]] auto Formula() const -> const class Formula & {
+      return formula_;
+    }
+    [[nodiscard]] auto RawFormula() const -> const std::string & {
+      return raw_formula_;
+    }
+    [[nodiscard]] auto Result() const -> ParseResult { return result_; }
 
   private:
     class Formula formula_;
@@ -44,10 +50,10 @@ private:
     auto operator=(const ExprStack &) -> ExprStack & = delete;
     auto operator=(ExprStack &&) -> ExprStack & = delete;
 
-    [[nodiscard]] auto Error() const -> bool;
-    auto SetError() -> void;
+    [[nodiscard]] auto Error() const -> bool { return error_; }
+    auto SetError() -> void { error_ = true; }
 
-    auto Holder() -> std::shared_ptr<Expr> &;
+    auto Holder() -> std::shared_ptr<Expr> & { return holder_; }
 
   private:
     std::shared_ptr<Expr> holder_{};

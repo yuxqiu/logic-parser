@@ -9,13 +9,19 @@
 #include "exprs/literal.hh"
 #include "exprs/unary.hh"
 
-Expr::Expr(enum Type type) : type_(type) {}
+auto Expr::Negate(enum Expr::Type type) -> enum Expr::Type {
+  switch (type){
+    case Type::kAnd : return Type::kOr;
+    case Type::kExist : return Type::kUniversal;
+    case Type::kOr : [[fallthrough]];
+    case Type::kImpl : return Type::kAnd;
+    case Type::kUniversal : return Type::kExist;
+    case Type::kNull : case Type::kLiteral : case Type::kNeg : break;
+  }
 
-auto Expr::Error() const -> bool { return error_; }
-
-auto Expr::SetError() -> void { error_ = true; }
-
-auto Expr::Type() const -> enum Type { return type_; }
+assert(false);
+return Type::kNull;
+}
 
 auto Expr::ChildrenSize() const -> uint64_t {
   if (IsLiteral(type_)) {
@@ -32,34 +38,6 @@ auto Expr::ChildrenSize() const -> uint64_t {
   return 0;
 }
 
-auto Expr::IsLiteral(enum Expr::Type type) -> bool {
-  return type == Expr::Type::kLiteral;
-}
-
-auto Expr::IsUnary(enum Expr::Type type) -> bool {
-  return type == Expr::Type::kNeg || type == Expr::Type::kExist ||
-         type == Expr::Type::kUniversal;
-}
-
-auto Expr::IsBinary(enum Expr::Type type) -> bool {
-  return type == Expr::Type::kAnd || type == Expr::Type::kImpl ||
-         type == Expr::Type::kOr;
-}
-
-auto Expr::Negate(enum Expr::Type type) -> enum Expr::Type {
-  switch (type){
-    case Type::kAnd : return Type::kOr;
-    case Type::kExist : return Type::kUniversal;
-    case Type::kOr : [[fallthrough]];
-    case Type::kImpl : return Type::kAnd;
-    case Type::kUniversal : return Type::kExist;
-    default : break;
-  }
-
-assert(false);
-return Type::kNull;
-}
-
 auto Expr::TypeToString(enum Expr::Type type) -> std::string {
   switch (type) {
   case Expr::Type::kAnd:
@@ -74,10 +52,12 @@ auto Expr::TypeToString(enum Expr::Type type) -> std::string {
     return "E";
   case Expr::Type::kUniversal:
     return "A";
-  default:
-    assert(false);
+  case Type::kNull:
+  case Type::kLiteral:
+    break;
   }
 
+  assert(false);
   return "Unreachable";
 }
 

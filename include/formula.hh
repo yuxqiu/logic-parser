@@ -16,7 +16,7 @@ public:
   // We could safely rely on default copy/move constructor/assignment as
   // the destructor follows the semantics of ref_count
   explicit Formula() = default;
-  explicit Formula(std::shared_ptr<Expr> expr);
+  explicit Formula(std::shared_ptr<Expr> expr) : expr_{std::move(expr)} {}
 
   ~Formula();
   Formula(const Formula &) = default;
@@ -24,10 +24,12 @@ public:
   auto operator=(const Formula &) -> Formula & = default;
   auto operator=(Formula &&) -> Formula & = default;
 
-  [[nodiscard]] auto Type() const -> enum Expr::Type;
+  [[nodiscard]] auto Type() const -> enum Expr::Type { return expr_->Type(); }
 
   [[nodiscard]] auto Description() const -> std::string;
-  [[nodiscard]] auto Infos() const -> std::vector<Token>;
+  [[nodiscard]] auto Infos() const -> std::vector<Token> {
+    return expr_->Infos();
+  }
 
   [[nodiscard]] auto ViewChildren() const -> std::vector<Formula>;
 

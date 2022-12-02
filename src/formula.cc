@@ -5,10 +5,6 @@
 #include "expr.hh"
 #include "formula.hh"
 
-Formula::Formula(std::shared_ptr<Expr> expr) : expr_{std::move(expr)} {}
-
-auto Formula::Type() const -> enum Expr::Type { return expr_->Type(); }
-
 // Add all the left child into the stack
 //
 // Left child is defined as
@@ -66,8 +62,6 @@ auto Formula::Description() const -> std::string {
 
   return out;
 }
-
-auto Formula::Infos() const -> std::vector<Token> { return expr_->Infos(); }
 
 auto Formula::ViewChildren() const -> std::vector<Formula> {
   std::vector children = expr_->ViewChildren();

@@ -21,26 +21,36 @@ public:
     kUniversal, // gamma formula
   };
 
-  [[nodiscard]] auto Type() const -> Type;
-
   // Helper function to deal with Expr::Type
-  [[nodiscard]] static auto IsLiteral(enum Expr::Type type) -> bool;
-  [[nodiscard]] static auto IsUnary(enum Expr::Type type) -> bool;
-  [[nodiscard]] static auto IsBinary(enum Expr::Type type) -> bool;
+  [[nodiscard]] static auto IsLiteral(enum Expr::Type type) -> bool {
+    return type == Expr::Type::kLiteral;
+  }
+
+  [[nodiscard]] static auto IsUnary(enum Expr::Type type) -> bool {
+    return type == Expr::Type::kNeg || type == Expr::Type::kExist ||
+           type == Expr::Type::kUniversal;
+  }
+
+  [[nodiscard]] static auto IsBinary(enum Expr::Type type) -> bool {
+    return type == Expr::Type::kAnd || type == Expr::Type::kImpl ||
+           type == Expr::Type::kOr;
+  }
+
   [[nodiscard]] static auto Negate(enum Expr::Type type) -> enum Expr::Type;
 
   static auto Description(const Expr *expr, std::string &out, uint64_t num)
       -> void;
   static auto TypeToString(enum Type type) -> std::string;
 
+  [[nodiscard]] auto Type() const -> Type { return type_; }
   // Get/Set error during constructing stage
-  [[nodiscard]] auto Error() const -> bool;
-  auto SetError() -> void;
+  [[nodiscard]] auto Error() const -> bool { return error_; }
+  auto SetError() -> void { error_ = true; }
 
   [[nodiscard]] auto ChildrenSize() const -> uint64_t;
 
   explicit Expr() = default;
-  explicit Expr(enum Type type);
+  explicit Expr(enum Type type) : type_(type) {}
 
   virtual ~Expr() = default;
   Expr(const Expr &&) = delete;
