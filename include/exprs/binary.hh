@@ -16,7 +16,7 @@ struct BinaryExpr : public Expr {
     return Type() != Type::kNull && expr_lhs_ && expr_rhs_;
   }
 
-  auto Accept(ExprVisitor &visitor) const -> void override { visitor.Visit(*this); }
+  auto Accept(ExprVisitor &visitor) const -> void final { visitor.Visit(*this); }
 
   std::shared_ptr<Expr> expr_lhs_{}, expr_rhs_{};
 };

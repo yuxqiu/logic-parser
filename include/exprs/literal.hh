@@ -29,7 +29,7 @@ struct PredicateLiteral : public Literal {
       : Literal(std::move(val)), left_var_(std::move(left)),
         right_var_(std::move(right)) {}
 
-  auto Accept(ExprVisitor &visitor) const -> void override {
+  auto Accept(ExprVisitor &visitor) const -> void final {
     visitor.Visit(*this);
   }
 

@@ -2,7 +2,7 @@
 #include <deque>
 #include <utility>
 
-#include "expr.hh"
+#include "exprs/exprs.hh"
 #include "formula.hh"
 #include "visitor/children_visitor.hh"
 #include "visitor/info_visitor.hh"
@@ -92,7 +92,7 @@ auto Description(const Expr *expr, std::string &out, uint64_t num) -> void {
 //  - the left child of the BinaryExpr
 auto Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
                          std::string &out, Expr *expr) -> void {
-  while (expr != nullptr) {
+  while (true) {
     ::Description(expr, out, 0);
     stack.emplace(expr, 1);
 
@@ -101,8 +101,7 @@ auto Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
 
     switch (children_visitor.ChildrenSize()) {
     case 0:
-      expr = nullptr;
-      break;
+      return;
     case 1:
       [[fallthrough]];
     case 2:

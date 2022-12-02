@@ -2,10 +2,11 @@
 #include <array>
 #include <cassert>
 #include <memory>
-#include <utility>
 
-#include "expr.hh"
+#include "exprs/binary.hh"
 #include "exprs/exprs.hh"
+#include "exprs/literal.hh"
+#include "exprs/unary.hh"
 #include "formula.hh"
 #include "parser.hh"
 #include "tokenizer.hh"

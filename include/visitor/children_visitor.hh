@@ -1,10 +1,13 @@
 #pragma once
 
-#include "expr.hh"
-#include "expr_visitor.hh"
-
 #include <memory>
 #include <vector>
+
+#include "exprs/binary.hh"
+#include "exprs/literal.hh"
+#include "exprs/unary.hh"
+
+#include "expr_visitor.hh"
 
 class ChildrenVisitor : public ExprVisitor {
 public:

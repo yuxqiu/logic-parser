@@ -47,7 +47,7 @@ public:
                                std::shared_ptr<Expr> expr)
       : UnaryExpr(type, std::move(expr)), var_(std::move(var)) {}
 
-  auto Accept(ExprVisitor &visitor) const -> void override {
+  auto Accept(ExprVisitor &visitor) const -> void final {
     visitor.Visit(*this);
   }
 

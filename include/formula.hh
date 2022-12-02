@@ -5,7 +5,7 @@
 #include <stack>
 #include <vector>
 
-#include "expr.hh"
+#include "exprs/exprs.hh"
 #include "formula.hh"
 
 /*

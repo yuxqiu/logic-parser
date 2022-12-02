@@ -5,8 +5,9 @@
 #include <utility>
 #include <vector>
 
-#include "expr.hh"
-#include "exprs/exprs.hh"
+#include "exprs/binary.hh"
+#include "exprs/literal.hh"
+#include "exprs/unary.hh"
 #include "formula.hh"
 #include "tableau.hh"
 #include "tokenizer.hh"

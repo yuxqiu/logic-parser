@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "constant.hh"
-#include "expr.hh"
 #include "formula.hh"
 #include "parser.hh"
 
