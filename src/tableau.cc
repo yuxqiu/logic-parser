@@ -290,12 +290,6 @@ auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool {
   return lhs.Type() > rhs.Type();
 }
 
-Theory::Theory(const TableauFormula &formula) { Append(formula); }
-
-auto Theory::Undecidable() const -> bool { return undecidable_; }
-
-auto Theory::Close() const -> bool { return close_; }
-
 // An encapsulation of Append
 // Help us to filter out literal and Assign formula to their appropriate
 // structure

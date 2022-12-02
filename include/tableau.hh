@@ -33,12 +33,12 @@ auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool;
 
 class Theory {
 public:
-  [[nodiscard]] auto Undecidable() const -> bool;
-  [[nodiscard]] auto Close() const -> bool;
+  [[nodiscard]] auto Undecidable() const -> bool { return undecidable_; }
+  [[nodiscard]] auto Close() const -> bool { return close_; }
 
-  explicit Theory(const TableauFormula &formula);
+  explicit Theory(const TableauFormula &formula) { Append(formula); }
 
-  // expandable => non-empty vector
+  // Expandable => non-empty vector
   // Un-expandable => empty vector
   auto TryExpand() -> std::vector<Theory>;
 
