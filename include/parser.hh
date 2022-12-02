@@ -18,7 +18,7 @@ public:
         : formula_(std::move(owner)), raw_formula_(std::move(raw_formula)),
           result_(result) {}
 
-    [[nodiscard]] auto Formula() -> Formula & { return formula_; }
+    [[nodiscard]] auto Formula() -> class Formula & { return formula_; }
     [[nodiscard]] auto Formula() const -> const class Formula & {
       return formula_;
     }
