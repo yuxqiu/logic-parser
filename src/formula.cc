@@ -4,6 +4,7 @@
 
 #include "expr.hh"
 #include "formula.hh"
+#include "visitor/children_visitor.hh"
 
 // Add all the left child into the stack
 //
@@ -16,14 +17,18 @@ auto Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
   while (expr != nullptr) {
     Expr::Description(expr, out, 0);
     stack.emplace(expr, 1);
-    switch (expr->ChildrenSize()) {
+
+    ChildrenVisitor children_visitor;
+    expr->Accept(children_visitor);
+
+    switch (children_visitor.ChildrenSize()) {
     case 0:
       expr = nullptr;
       break;
     case 1:
       [[fallthrough]];
     case 2:
-      expr = expr->ViewChildren()[0].get();
+      expr = children_visitor.ViewChildren()[0].get();
     }
   }
 }
@@ -49,14 +54,18 @@ auto Formula::Description() const -> std::string {
     auto &[expr, num] = stack.top();
 
     Expr::Description(expr, out, num);
-    if (num >= expr->ChildrenSize()) {
+
+    ChildrenVisitor children_visitor;
+    expr->Accept(children_visitor);
+
+    if (num >= children_visitor.ChildrenSize()) {
       stack.pop();
       continue;
     }
 
     // Only BinaryExpr falls into this case
     // because it has ChildrenSize == 2
-    ExpandLeft(stack, out, expr->ViewChildren()[num].get());
+    ExpandLeft(stack, out, children_visitor.ViewChildren()[num].get());
     ++num;
   }
 
@@ -64,10 +73,11 @@ auto Formula::Description() const -> std::string {
 }
 
 auto Formula::ViewChildren() const -> std::vector<Formula> {
-  std::vector children = expr_->ViewChildren();
+  ChildrenVisitor children_visitor;
+  expr_->Accept(children_visitor);
   std::vector<Formula> ret;
-  ret.reserve(children.size());
-  for (auto &&expr : children) {
+  ret.reserve(children_visitor.ChildrenSize());
+  for (auto &&expr : children_visitor.ViewChildren()) {
     ret.emplace_back(std::move(expr));
   }
   return ret;
@@ -94,8 +104,9 @@ Formula::~Formula() {
     if (front.use_count() == 1) {
       // increment ref_count, so it will not be destroyed after front goes out
       // of scope
-      auto children = front->ViewChildren();
-      for (auto &&expr : children) {
+      ChildrenVisitor children_visitor;
+      front->Accept(children_visitor);
+      for (auto &&expr : children_visitor.ViewChildren()) {
         destruct_queue.emplace_back(std::move(expr));
       }
     }

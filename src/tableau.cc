@@ -10,6 +10,8 @@
 #include "formula.hh"
 #include "tableau.hh"
 #include "tokenizer.hh"
+#include "visitor/children_visitor.hh"
+#include "visitor/info_visitor.hh"
 
 TableauFormula::TableauFormula(const Formula &formula) : Formula(formula) {}
 
@@ -72,15 +74,21 @@ static auto Flatten(std::vector<Expr *> &flatten,
       continue;
     }
 
-    const auto children = flatten[i]->ViewChildren();
+    ChildrenVisitor children_visitor;
+    flatten[i]->Accept(children_visitor);
+
+    const auto &children = children_visitor.ViewChildren();
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
       flatten.emplace_back(it->get());
       parents.emplace_back(i);
       to_merge.emplace_back();
 
+      InfoVisitor info_visitor;
+      (*it)->Accept(info_visitor);
+
       if (((*it)->Type() == Expr::Type::kExist ||
            (*it)->Type() == Expr::Type::kUniversal) &&
-          (*it)->Infos()[0] == src) {
+          info_visitor.Infos()[0] == src) {
         // If var is bounded by new quantifier, store it to to_merge directly
         // we will then merge it by checking the same condition
         to_merge.back().emplace_back(*it);
@@ -94,40 +102,53 @@ static auto Merge(const Token &src, std::vector<Expr *> &flatten,
                   std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
                   const Token &dst) -> void {
   for (auto i = to_merge.size() - 1; i > 0; --i) {
-    if (flatten[i]->Type() ==
-        Expr::Type::kLiteral) { // Literal => constructs literal
-      auto infos = flatten[i]->Infos();
+    if (Expr::IsLiteral(flatten[i]->Type())) { // Literal => constructs literal
+      InfoVisitor info_visitor;
+      flatten[i]->Accept(info_visitor);
+      auto &&infos = info_visitor.Infos();
       assert(infos.size() == 3);
       infos[1] = infos[1] == src ? dst : infos[1];
       infos[2] = infos[2] == src ? dst : infos[2];
       to_merge[parents[i]].emplace_back(std::make_shared<PredicateLiteral>(
           std::move(infos[0]), std::move(infos[1]), std::move(infos[2])));
-    } else if (Expr::IsBinary(flatten[i]->Type())) { // Construct Binary
+      continue;
+    }
+
+    if (Expr::IsBinary(flatten[i]->Type())) { // Construct Binary
       to_merge[parents[i]].emplace_back(std::make_shared<BinaryExpr>(
           flatten[i]->Type(), std::move(to_merge[i][0]),
           std::move(to_merge[i][1])));
-    } else if (flatten[i]->Type() == Expr::Type::kExist ||
-               flatten[i]->Type() ==
-                   Expr::Type::kUniversal) { // Quantified Unary
-      if (flatten[i]->Infos()[0] ==
-          src) { // if variable is re-bounded => DO a simple copy
+      continue;
+    }
+
+    if (flatten[i]->Type() == Expr::Type::kExist ||
+        flatten[i]->Type() == Expr::Type::kUniversal) { // Quantified Unary
+      InfoVisitor info_visitor;
+      flatten[i]->Accept(info_visitor);
+      auto &&infos = info_visitor.Infos();
+
+      if (infos[0] == src) { // if variable is re-bounded => DO a simple copy
         to_merge[parents[i]].emplace_back(std::move(to_merge[i][0]));
       } else { // otherwise => Construct Quantified Expr
         to_merge[parents[i]].emplace_back(std::make_shared<QuantifiedUnaryExpr>(
-            flatten[i]->Type(), std::move(flatten[i]->Infos()[0]),
+            flatten[i]->Type(), std::move(infos[0]),
             std::move(to_merge[i][0])));
       }
-    } else if (flatten[i]->Type() ==
-               Expr::Type::kNeg) { // Negation => Construct UnaryExpr
+      continue;
+    }
+
+    if (flatten[i]->Type() ==
+        Expr::Type::kNeg) { // Negation => Construct UnaryExpr
       to_merge[parents[i]].emplace_back(std::make_shared<UnaryExpr>(
           flatten[i]->Type(), std::move(to_merge[i][0])));
-    } else { // Unreachable
-      assert(false);
+      continue;
     }
+
+    assert(false);
   }
 }
 
-static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
+static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
                            const Token &dst) -> std::shared_ptr<Expr> {
   // Potential Optimization Here
   // Encapsulate them inside a struct is better for locality
@@ -135,9 +156,12 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
   std::vector<uint64_t> parents{0, 0};
   std::vector<std::vector<std::shared_ptr<Expr>>> to_merge{{}, {}};
 
+  InfoVisitor info_visitor;
+  expr->Accept(info_visitor);
+
   if ((expr->Type() == Expr::Type::kExist ||
        expr->Type() == Expr::Type::kUniversal) &&
-      expr->Infos()[0] == src) {
+      info_visitor.Infos()[0] == src) {
     // If var is bounded by new quantifier, store it to to_merge directly
     // we will then merge it by checking the same condition
     to_merge[1].emplace_back(expr);
@@ -158,17 +182,25 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
                                           const Token &token)
     -> std::vector<std::vector<std::shared_ptr<Expr>>> {
   (void)token;
+
+  ChildrenVisitor children_visitor;
+  expr->Accept(children_visitor);
+  auto &&childrens = children_visitor.ViewChildren();
+
   if (expr->Type() == Expr::Type::kAnd) { // Alpha expansion
-    return {expr->ViewChildren()};
+    return {std::move(childrens)};
   }
+
   if (expr->Type() == Expr::Type::kOr) { // Beta expansion
-    return {{expr->ViewChildren()[0]}, {expr->ViewChildren()[1]}};
+    return {{std::move(childrens[0])}, {std::move(childrens[1])}};
   }
+
   if (expr->Type() == Expr::Type::kImpl) { // Beta expansion
     return {{std::make_shared<UnaryExpr>(Expr::Type::kNeg,
-                                         expr->ViewChildren()[0])},
-            {expr->ViewChildren()[1]}};
+                                         std::move(childrens[0]))},
+            {std::move(childrens[1])}};
   }
+
   if (expr->Type() == Expr::Type::kExist ||
       expr->Type() == Expr::Type::kUniversal) {
     // Delta/Gamma expansion
@@ -182,10 +214,14 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
          expansion
         - Gamma will be added back in TryExpand
     */
-    return {{CopyAndReplace(expr->Infos()[0], expr->ViewChildren()[0], token)}};
+    InfoVisitor info_visitor;
+    expr->Accept(info_visitor);
+    return {{CopyAndReplace(info_visitor.Infos()[0], std::move(childrens[0]),
+                            token)}};
   }
+
   if (expr->Type() == Expr::Type::kNeg) {
-    std::shared_ptr<Expr> children = expr->ViewChildren()[0];
+    std::shared_ptr<Expr> children = std::move(childrens[0]);
 
     // If we are negating literal, we return Neg+Literal
     // by the definition of literals in Tableau
@@ -194,27 +230,33 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
           {std::make_shared<UnaryExpr>(Expr::Type::kNeg, std::move(children))}};
     }
 
+    ChildrenVisitor children_visitor_for_children;
+    children->Accept(children_visitor_for_children);
+    auto &&children_of_children = children_visitor_for_children.ViewChildren();
+
     // If Unary
     // If Neg, we skip the double Negation
     if (children->Type() == Expr::Type::kNeg) {
-      return {{std::move(children->ViewChildren()[0])}};
+      return {{std::move(children_of_children[0])}};
     }
+
     // Otherwise, we negate the Quantified Formula based on their rule
     if (children->Type() == Expr::Type::kExist ||
         children->Type() == Expr::Type::kUniversal) {
-      std::vector infos = children->Infos();
+      InfoVisitor info_visitor;
+      children->Accept(info_visitor);
+      auto &&infos = info_visitor.Infos();
       assert(infos.size() == 1);
 
       return {{std::make_shared<QuantifiedUnaryExpr>(
           Expr::Negate(children->Type()), std::move(infos[0]),
-          std::make_shared<UnaryExpr>(
-              Expr::Type::kNeg, std::move(children->ViewChildren()[0])))}};
+          std::make_shared<UnaryExpr>(Expr::Type::kNeg,
+                                      std::move(children_of_children[0])))}};
     }
 
     // If Binary => we negate them based on their rules
     if (children->Type() == Expr::Type::kAnd ||
         children->Type() == Expr::Type::kOr) {
-      std::vector children_of_children = children->ViewChildren();
       auto neg_children_left = std::make_shared<UnaryExpr>(
           Expr::Type::kNeg, std::move(children_of_children[0]));
       auto neg_children_right = std::make_shared<UnaryExpr>(
@@ -227,7 +269,6 @@ static auto CopyAndReplace(const Token &src, const std::shared_ptr<Expr> &expr,
 
     // If implication => Negate it based on its fule
     if (children->Type() == Expr::Type::kImpl) {
-      std::vector children_of_children = children->ViewChildren();
       auto neg_children_right = std::make_shared<UnaryExpr>(
           Expr::Type::kNeg, std::move(children_of_children[1]));
       std::shared_ptr<Expr> impl_node = std::make_shared<BinaryExpr>(

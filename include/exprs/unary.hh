@@ -2,8 +2,7 @@
 
 #include "exprs/exprs.hh"
 
-class UnaryExpr : public Expr {
-public:
+struct UnaryExpr : public Expr {
   explicit UnaryExpr(enum Type type) : Expr(type) {
     if (!IsUnary(type)) {
       SetError();
@@ -14,7 +13,7 @@ public:
       : Expr(type), expr_(std::move(expr)) {}
 
   auto Append(std::shared_ptr<Expr> expr) -> void final {
-    if (expr_ || type_ == Type::kNull) {
+    if (expr_ || Type() == Type::kNull) {
       SetError();
       return;
     }
@@ -28,23 +27,19 @@ public:
   }
 
   [[nodiscard]] auto Complete() const -> bool final {
-    return type_ != Type::kNull && expr_;
+    return Type() != Type::kNull && expr_;
   }
 
-  [[nodiscard]] auto ViewChildren() const
-      -> std::vector<std::shared_ptr<Expr>> final {
-    return {expr_};
+  auto Accept(ExprVisitor &visitor) const -> void override {
+    visitor.Visit(*this);
   }
 
-  [[nodiscard]] auto Infos() const -> std::vector<Token> override { return {}; }
-
-protected:
   std::shared_ptr<Expr> expr_{};
 };
 
 // A Special UnaryExpr Expx where E is a quantifier
 // Need to handle this case (by checking an additional Token)
-class QuantifiedUnaryExpr : public UnaryExpr {
+struct QuantifiedUnaryExpr : public UnaryExpr {
 public:
   explicit QuantifiedUnaryExpr(enum Type type, Token var)
       : UnaryExpr(type), var_(std::move(var)) {}
@@ -52,10 +47,9 @@ public:
                                std::shared_ptr<Expr> expr)
       : UnaryExpr(type, std::move(expr)), var_(std::move(var)) {}
 
-  [[nodiscard]] auto Infos() const -> std::vector<Token> final {
-    return {var_};
+  auto Accept(ExprVisitor &visitor) const -> void override {
+    visitor.Visit(*this);
   }
 
-private:
   Token var_;
 };

@@ -6,6 +6,7 @@
 
 #include "constant.hh"
 #include "tokenizer.hh"
+#include "visitor/expr_visitor.hh"
 
 class Expr {
 public:
@@ -43,11 +44,11 @@ public:
   static auto TypeToString(enum Type type) -> std::string;
 
   [[nodiscard]] auto Type() const -> Type { return type_; }
+  auto SetType(enum Expr::Type type) -> void { type_ = type; }
+
   // Get/Set error during constructing stage
   [[nodiscard]] auto Error() const -> bool { return error_; }
   auto SetError() -> void { error_ = true; }
-
-  [[nodiscard]] auto ChildrenSize() const -> uint64_t;
 
   explicit Expr() = default;
   explicit Expr(enum Type type) : type_(type) {}
@@ -66,23 +67,12 @@ public:
   // Whether of not the Expr is completely built
   [[nodiscard]] virtual auto Complete() const -> bool = 0;
 
-  // View the children of the current node (shared ownership)
-  [[nodiscard]] virtual auto ViewChildren() const
-      -> std::vector<std::shared_ptr<Expr>> = 0;
+  virtual auto Accept(ExprVisitor &visitor) const -> void = 0;
 
-  // Get Token of the Expr (if there is any)
-  //
-  // A token is
-  //  - Literal (p or P(x, y))
-  //  - Quantified Var
-  [[nodiscard]] virtual auto Infos() const -> std::vector<Token> = 0;
-
-protected:
+private:
   enum Type type_ {
     Type::kNull
   }; // protected because BinaryExpr needs to set type_ later
-
-private:
   bool error_{false};
 
   friend class Formula;

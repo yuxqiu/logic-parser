@@ -27,9 +27,6 @@ public:
   [[nodiscard]] auto Type() const -> enum Expr::Type { return expr_->Type(); }
 
   [[nodiscard]] auto Description() const -> std::string;
-  [[nodiscard]] auto Infos() const -> std::vector<Token> {
-    return expr_->Infos();
-  }
 
   [[nodiscard]] auto ViewChildren() const -> std::vector<Formula>;
 

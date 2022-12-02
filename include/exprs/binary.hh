@@ -2,8 +2,7 @@
 
 #include "exprs/exprs.hh"
 
-class BinaryExpr : public Expr {
-public:
+struct BinaryExpr : public Expr {
   BinaryExpr() = default;
   explicit BinaryExpr(enum Type type, std::shared_ptr<Expr> expr_lhs,
                       std::shared_ptr<Expr> expr_rhs)
@@ -14,16 +13,10 @@ public:
   auto Append(enum Type type) -> void final;
 
   [[nodiscard]] auto Complete() const -> bool final {
-    return type_ != Type::kNull && expr_lhs_ && expr_rhs_;
+    return Type() != Type::kNull && expr_lhs_ && expr_rhs_;
   }
 
-  [[nodiscard]] auto ViewChildren() const
-      -> std::vector<std::shared_ptr<Expr>> final {
-    return {expr_lhs_, expr_rhs_};
-  }
+  auto Accept(ExprVisitor &visitor) const -> void override { visitor.Visit(*this); }
 
-  [[nodiscard]] auto Infos() const -> std::vector<Token> final { return {}; }
-
-private:
   std::shared_ptr<Expr> expr_lhs_{}, expr_rhs_{};
 };

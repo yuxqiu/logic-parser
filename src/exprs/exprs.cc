@@ -8,6 +8,7 @@
 #include "exprs/exprs.hh"
 #include "exprs/literal.hh"
 #include "exprs/unary.hh"
+#include "visitor/info_visitor.hh"
 
 auto Expr::Negate(enum Expr::Type type) -> enum Expr::Type {
   switch (type){
@@ -21,21 +22,6 @@ auto Expr::Negate(enum Expr::Type type) -> enum Expr::Type {
 
 assert(false);
 return Type::kNull;
-}
-
-auto Expr::ChildrenSize() const -> uint64_t {
-  if (IsLiteral(type_)) {
-    return 0;
-  }
-  if (IsUnary(type_)) {
-    return 1;
-  }
-  if (IsBinary(type_)) {
-    return 2;
-  }
-
-  assert(false);
-  return 0;
 }
 
 auto Expr::TypeToString(enum Expr::Type type) -> std::string {
@@ -64,7 +50,10 @@ auto Expr::TypeToString(enum Expr::Type type) -> std::string {
 auto static LiteralDescription(const Expr *expr, std::string &out, uint64_t num)
     -> void {
   if (num == 0) {
-    auto infos = expr->Infos();
+    InfoVisitor visitor;
+    expr->Accept(visitor);
+
+    auto &&infos = visitor.Infos();
     out += infos[0].ToString();
     if (infos.size() == 3) {
       out += "(" + infos[1].ToString() + "," + infos[2].ToString() + ")";
@@ -78,7 +67,9 @@ auto static UnaryDescription(const Expr *expr, std::string &out, uint64_t num)
     out += Expr::TypeToString(expr->Type());
     if (expr->Type() == Expr::Type::kExist ||
         expr->Type() == Expr::Type::kUniversal) {
-      out += expr->Infos()[0].ToString();
+      InfoVisitor visitor;
+      expr->Accept(visitor);
+      out += visitor.Infos()[0].ToString();
     }
   }
 }

@@ -13,7 +13,7 @@ auto BinaryExpr::Append(std::shared_ptr<Expr> expr) -> void {
     return;
   }
 
-  if (type_ == Type::kNull) {
+  if (Type() == Type::kNull) {
     SetError();
     return;
   }
@@ -22,7 +22,7 @@ auto BinaryExpr::Append(std::shared_ptr<Expr> expr) -> void {
 }
 
 auto BinaryExpr::Append(enum Type type) -> void {
-  if (type_ != Type::kNull || !expr_lhs_) {
+  if (Type() != Type::kNull || !expr_lhs_) {
     SetError();
     return;
   }
@@ -31,5 +31,5 @@ auto BinaryExpr::Append(enum Type type) -> void {
     return;
   }
 
-  type_ = type;
+  SetType(type);
 }

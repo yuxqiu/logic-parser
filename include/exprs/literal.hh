@@ -2,8 +2,7 @@
 
 #include "exprs/exprs.hh"
 
-class Literal : public Expr {
-public:
+struct Literal : public Expr {
   explicit Literal(Token val) : Expr(Type::kLiteral), val_{std::move(val)} {}
 
   auto Append(std::shared_ptr<Expr> expr) -> void final {
@@ -18,27 +17,20 @@ public:
 
   [[nodiscard]] auto Complete() const -> bool final { return true; }
 
-  [[nodiscard]] auto ViewChildren() const
-      -> std::vector<std::shared_ptr<Expr>> final {
-    return {};
+  auto Accept(ExprVisitor &visitor) const -> void override {
+    visitor.Visit(*this);
   }
 
-  [[nodiscard]] auto Infos() const -> std::vector<Token> override {
-    return {val_};
-  }
-
-protected:
   Token val_;
 };
 
-class PredicateLiteral : public Literal {
-public:
+struct PredicateLiteral : public Literal {
   explicit PredicateLiteral(Token val, Token left, Token right)
       : Literal(std::move(val)), left_var_(std::move(left)),
         right_var_(std::move(right)) {}
 
-  [[nodiscard]] auto Infos() const -> std::vector<Token> final {
-    return {val_, left_var_, right_var_};
+  auto Accept(ExprVisitor &visitor) const -> void override {
+    visitor.Visit(*this);
   }
 
   Token left_var_, right_var_;
