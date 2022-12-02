@@ -1,9 +1,9 @@
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <cassert>
 
 #include "parser.hh"
 #include "tableau.hh"
@@ -33,7 +33,7 @@ auto PrintParserInformation(std::ostream &out,
       std::vector children = formula.ViewChildren();
       assert(children.size() == 2);
       out << "Its left hand side is " << children[0].Description();
-      out << ", its connective is " << Expr::TypeToString(formula.Type());
+      out << ", its connective is " << formula.Connective();
       out << ", and its right hand side is " << children[1].Description();
       out << ".\n";
       return;
@@ -62,7 +62,7 @@ auto PrintParserInformation(std::ostream &out,
       std::vector children = formula.ViewChildren();
       assert(children.size() == 2);
       out << "Its left hand side is " << children[0].Description();
-      out << ", its connective is " << Expr::TypeToString(formula.Type());
+      out << ", its connective is " << formula.Connective();
       out << ", and its right hand side is " << children[1].Description();
       out << ".\n";
       return;

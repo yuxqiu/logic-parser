@@ -28,6 +28,8 @@ public:
 
   [[nodiscard]] auto Description() const -> std::string;
 
+  [[nodiscard]] auto Connective() const -> std::string;
+
   [[nodiscard]] auto ViewChildren() const -> std::vector<Formula>;
 
 protected:

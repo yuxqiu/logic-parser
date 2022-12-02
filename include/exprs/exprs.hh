@@ -39,10 +39,6 @@ public:
 
   [[nodiscard]] static auto Negate(enum Expr::Type type) -> enum Expr::Type;
 
-  static auto Description(const Expr *expr, std::string &out, uint64_t num)
-      -> void;
-  static auto TypeToString(enum Type type) -> std::string;
-
   [[nodiscard]] auto Type() const -> Type { return type_; }
   auto SetType(enum Expr::Type type) -> void { type_ = type; }
 
@@ -70,9 +66,7 @@ public:
   virtual auto Accept(ExprVisitor &visitor) const -> void = 0;
 
 private:
-  enum Type type_ {
-    Type::kNull
-  }; // protected because BinaryExpr needs to set type_ later
+  enum Type type_ { Type::kNull };
   bool error_{false};
 
   friend class Formula;

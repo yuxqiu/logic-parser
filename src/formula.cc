@@ -5,6 +5,84 @@
 #include "expr.hh"
 #include "formula.hh"
 #include "visitor/children_visitor.hh"
+#include "visitor/info_visitor.hh"
+
+namespace {
+auto TypeToString(enum Expr::Type type) -> std::string {
+  switch (type) {
+  case Expr::Type::kAnd:
+    return "^";
+  case Expr::Type::kOr:
+    return "v";
+  case Expr::Type::kImpl:
+    return ">";
+  case Expr::Type::kNeg:
+    return "-";
+  case Expr::Type::kExist:
+    return "E";
+  case Expr::Type::kUniversal:
+    return "A";
+  case Expr::Type::kNull:
+  case Expr::Type::kLiteral:
+    break;
+  }
+
+  assert(false);
+  return "Unreachable";
+}
+
+auto LiteralDescription(const Expr *expr, std::string &out, uint64_t num)
+    -> void {
+  if (num == 0) {
+    InfoVisitor visitor;
+    expr->Accept(visitor);
+
+    auto &&infos = visitor.Infos();
+    out += infos[0].ToString();
+    if (infos.size() == 3) {
+      out += "(" + infos[1].ToString() + "," + infos[2].ToString() + ")";
+    }
+  }
+}
+
+auto UnaryDescription(const Expr *expr, std::string &out, uint64_t num)
+    -> void {
+  if (num == 0) {
+    out += TypeToString(expr->Type());
+    if (expr->Type() == Expr::Type::kExist ||
+        expr->Type() == Expr::Type::kUniversal) {
+      InfoVisitor visitor;
+      expr->Accept(visitor);
+      out += visitor.Infos()[0].ToString();
+    }
+  }
+}
+
+auto BinaryDescription(const Expr *expr, std::string &out, uint64_t num)
+    -> void {
+  if (num == 0) {
+    out += "(";
+  } else if (num == 1) {
+    out += TypeToString(expr->Type());
+  } else if (num == 2) {
+    out += ")";
+  }
+}
+
+auto Description(const Expr *expr, std::string &out, uint64_t num) -> void {
+  if (Expr::IsBinary(expr->Type())) {
+    BinaryDescription(expr, out, num);
+  } else if (Expr::IsUnary(expr->Type())) {
+    UnaryDescription(expr, out, num);
+  } else if (Expr::IsLiteral(expr->Type())) {
+    LiteralDescription(expr, out, num);
+  }
+}
+} // namespace
+
+[[nodiscard]] auto Formula::Connective() const -> std::string {
+  return TypeToString(expr_->Type());
+}
 
 // Add all the left child into the stack
 //
@@ -15,7 +93,7 @@
 auto Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
                          std::string &out, Expr *expr) -> void {
   while (expr != nullptr) {
-    Expr::Description(expr, out, 0);
+    ::Description(expr, out, 0);
     stack.emplace(expr, 1);
 
     ChildrenVisitor children_visitor;
@@ -53,7 +131,7 @@ auto Formula::Description() const -> std::string {
   while (!stack.empty()) {
     auto &[expr, num] = stack.top();
 
-    Expr::Description(expr, out, num);
+    ::Description(expr, out, num);
 
     ChildrenVisitor children_visitor;
     expr->Accept(children_visitor);

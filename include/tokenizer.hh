@@ -12,8 +12,13 @@ public:
 private:
   std::string token_{};
 
-  friend auto operator<(const Token &lhs, const Token &rhs) -> bool;
-  friend auto operator==(const Token &lhs, const Token &rhs) -> bool;
+  friend auto operator<(const Token &lhs, const Token &rhs) -> bool {
+    return lhs.token_ < rhs.token_;
+  }
+
+  friend auto operator==(const Token &lhs, const Token &rhs) -> bool {
+    return lhs.token_ == rhs.token_;
+  }
 };
 
 namespace std {
@@ -23,13 +28,6 @@ template <> struct hash<Token> {
   }
 };
 } // namespace std
-
-inline auto operator<(const Token &lhs, const Token &rhs) -> bool {
-  return lhs.token_ < rhs.token_;
-}
-inline auto operator==(const Token &lhs, const Token &rhs) -> bool {
-  return lhs.token_ == rhs.token_;
-}
 
 class Tokenizer {
 public:
