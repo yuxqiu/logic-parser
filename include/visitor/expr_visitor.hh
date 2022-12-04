@@ -13,4 +13,5 @@ public:
   virtual void Visit(const UnaryExpr &unary) = 0;
   virtual void Visit(const QuantifiedUnaryExpr &quantified) = 0;
   virtual void Visit(const BinaryExpr &binary) = 0;
+  virtual ~ExprVisitor() = default;
 };
