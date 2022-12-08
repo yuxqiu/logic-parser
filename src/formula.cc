@@ -1,7 +1,7 @@
 #include <cassert>
 #include <cstddef>
-#include <deque>
 #include <utility>
+#include <vector>
 
 #include "exprs/exprs.hh"
 #include "formula.hh"
@@ -174,14 +174,12 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
       so we don't need to destruct it
 */
 Formula::~Formula() {
-  std::deque<std::shared_ptr<Expr>> destruct_queue;
+  std::vector<std::shared_ptr<Expr>> destruct_queue;
   destruct_queue.emplace_back(std::move(expr_));
-  while (!destruct_queue.empty()) {
-    const auto front = std::move(destruct_queue.front());
-    destruct_queue.pop_front();
+  for (decltype(destruct_queue)::size_type i = 0; i < destruct_queue.size();
+       ++i) {
+    const auto front = std::move(destruct_queue[i]);
     if (front.use_count() == 1) {
-      // increment ref_count, so it will not be destroyed after front goes out
-      // of scope
       ChildrenVisitor children_visitor;
       front->Accept(children_visitor);
       for (auto &&expr : children_visitor.ViewChildren()) {

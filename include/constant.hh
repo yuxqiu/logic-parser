@@ -23,9 +23,8 @@ public:
 
   // Add a new constant and Return it
   auto AddConst() -> Token {
-    generated_constants_.emplace_back(
+    return generated_constants_.emplace_back(
         std::to_string(generated_constants_.size()));
-    return generated_constants_.back();
   }
 
 private:

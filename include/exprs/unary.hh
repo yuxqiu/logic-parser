@@ -3,17 +3,12 @@
 #include "exprs/exprs.hh"
 
 struct UnaryExpr : public Expr {
-  explicit UnaryExpr(enum Type type) : Expr(type) {
-    if (!IsUnary(type)) {
-      SetError();
-      return;
-    }
-  }
+  explicit UnaryExpr(enum Type type) : Expr(type) {}
   explicit UnaryExpr(enum Type type, std::shared_ptr<Expr> expr)
       : Expr(type), expr_(std::move(expr)) {}
 
   auto Append(std::shared_ptr<Expr> expr) -> void final {
-    if (expr_ || Type() == Type::kNull) {
+    if (expr_) {
       SetError();
       return;
     }
