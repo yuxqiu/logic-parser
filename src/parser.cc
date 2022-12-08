@@ -11,38 +11,66 @@
 #include "parser.hh"
 #include "tokenizer.hh"
 
+namespace {
 // Basic Infos
-const static std::array kLeftParenthesisAll = {Token{"("}};
-const static std::array kRightParenthesisAll = {Token{")"}};
+const std::array kLeftParenthesisAll = {Token{"("}};
+const std::array kRightParenthesisAll = {Token{")"}};
 
-const static std::array kBinaryAll = {Token{"^"}, Token{"v"}, Token{">"}};
-const static std::array kBinaryAllToType = {
-    std::pair{Token{"^"}, Expr::Type::kAnd},
-    std::pair{Token{"v"}, Expr::Type::kOr},
-    std::pair{Token{">"}, Expr::Type::kImpl}};
+const std::array kBinaryAll = {Token{"^"}, Token{"v"}, Token{">"}};
+const std::array kBinaryAllToType = {std::pair{Token{"^"}, Expr::Type::kAnd},
+                                     std::pair{Token{"v"}, Expr::Type::kOr},
+                                     std::pair{Token{">"}, Expr::Type::kImpl}};
 
 // Prop Starts
-const static std::array kUnaryProp = {Token{"-"}};
-const static std::array kUnaryPropToType = {
-    std::pair{Token{"-"}, Expr::Type::kNeg}};
+const std::array kUnaryProp = {Token{"-"}};
+const std::array kUnaryPropToType = {std::pair{Token{"-"}, Expr::Type::kNeg}};
 
-const static std::array kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
-                                        Token{"s"}};
+const std::array kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
+                                 Token{"s"}};
 // Prop Ends
 
 // Predicate Starts
-const static std::array kUnaryPredicate = {Token{"E"}, Token{"A"}};
-const static std::array kUnaryPredicateToType = {
+const std::array kUnaryPredicate = {Token{"E"}, Token{"A"}};
+const std::array kUnaryPredicateToType = {
     std::pair{Token{"E"}, Expr::Type::kExist},
     std::pair{Token{"A"}, Expr::Type::kUniversal}};
 
-const static std::array kLiteralPredicate = {Token{"P"}, Token{"Q"}, Token{"R"},
-                                             Token{"S"}};
-const static std::array kVarPredicate = {Token{"x"}, Token{"y"}, Token{"z"},
-                                         Token{"w"}};
+const std::array kLiteralPredicate = {Token{"P"}, Token{"Q"}, Token{"R"},
+                                      Token{"S"}};
+const std::array kVarPredicate = {Token{"x"}, Token{"y"}, Token{"z"},
+                                  Token{"w"}};
 // Predicate Ends
 
-auto Parser::Merge(ExprStack &stack) -> void {
+class ExprStack : std::stack<std::shared_ptr<Expr>> {
+public:
+  using std::stack<std::shared_ptr<Expr>>::empty;
+  using std::stack<std::shared_ptr<Expr>>::top;
+  using std::stack<std::shared_ptr<Expr>>::pop;
+  using std::stack<std::shared_ptr<Expr>>::emplace;
+
+  ExprStack() = default;
+  ~ExprStack() {
+    while (!empty()) {
+      [[maybe_unused]] Formula expr_destructor{std::move(top())};
+      pop();
+    }
+  }
+  ExprStack(const ExprStack &) = delete;
+  ExprStack(ExprStack &&) = delete;
+  auto operator=(const ExprStack &) -> ExprStack & = delete;
+  auto operator=(ExprStack &&) -> ExprStack & = delete;
+
+  [[nodiscard]] auto Error() const -> bool { return error_; }
+  auto SetError() -> void { error_ = true; }
+
+  auto Holder() -> std::shared_ptr<Expr> & { return holder_; }
+
+private:
+  std::shared_ptr<Expr> holder_{};
+  bool error_{false};
+};
+
+auto Merge(ExprStack &stack) -> void {
   auto expr = std::move(stack.top());
   stack.pop();
 
@@ -61,7 +89,7 @@ auto Parser::Merge(ExprStack &stack) -> void {
   }
 }
 
-auto Parser::MergeStack(ExprStack &stack) -> void {
+auto MergeStack(ExprStack &stack) -> void {
   Merge(stack);
   while (!stack.empty() && !stack.Error() &&
          !Expr::IsBinary(stack.top()->Type()) && stack.top()->Complete()) {
@@ -69,23 +97,16 @@ auto Parser::MergeStack(ExprStack &stack) -> void {
   }
 }
 
-Parser::ExprStack::~ExprStack() {
-  while (!empty()) {
-    const Formula destructed_formula{std::move(top())};
-    pop();
-  }
-}
-
-auto Parser::ProcessLeftParenthesis(ExprStack &stack, Tokenizer &tokenizer,
-                                    Token &token) -> void {
+auto ProcessLeftParenthesis(ExprStack &stack, Tokenizer &tokenizer,
+                            Token &token) -> void {
   (void)tokenizer;
   (void)token;
   // If ( => a new BinaryExpr
   stack.emplace(std::make_shared<BinaryExpr>());
 }
 
-auto Parser::ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
-                                     Token &token) -> void {
+auto ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
+                             Token &token) -> void {
   (void)tokenizer;
   (void)token;
   // if these, we set an error
@@ -102,8 +123,8 @@ auto Parser::ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
   MergeStack(stack);
 }
 
-auto Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
-                                     Token &token) -> void {
+auto ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
+                             Token &token) -> void {
   (void)tokenizer;
 
   // if these, we set an error
@@ -126,8 +147,8 @@ auto Parser::ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
   stack.top()->Append(type);
 }
 
-auto Parser::ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
-                              Token &token) -> void {
+auto ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer, Token &token)
+    -> void {
   (void)tokenizer;
   // If UnaryProp (-) => create a new Unary Expr
   const enum Expr::Type type =
@@ -139,16 +160,16 @@ auto Parser::ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer,
   stack.emplace(std::make_shared<UnaryExpr>(type));
 }
 
-auto Parser::ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer,
-                                Token &token) -> void {
+auto ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer, Token &token)
+    -> void {
   (void)tokenizer;
   // If Literal => create a new literal
   stack.emplace(std::make_shared<Literal>(std::move(token)));
   MergeStack(stack);
 }
 
-auto Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
-                                   Token &token) -> void {
+auto ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer, Token &token)
+    -> void {
   (void)tokenizer;
   Token next_token = tokenizer.PeekToken();
   tokenizer.PopToken();
@@ -170,8 +191,8 @@ auto Parser::ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer,
 }
 
 // Process formulas like P(x,y)
-auto Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
-                                     Token &token) -> void {
+auto ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
+                             Token &token) -> void {
   (void)tokenizer;
   std::array<Token, 5> token_holder;
 
@@ -206,6 +227,7 @@ auto Parser::ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
                                                    std::move(token_holder[3])));
   MergeStack(stack);
 }
+} // namespace
 
 auto Parser::Parse(std::string line) -> ParserOutput {
   bool proposition{false};

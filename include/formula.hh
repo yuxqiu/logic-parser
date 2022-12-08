@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <memory>
-#include <stack>
 #include <vector>
 
 #include "exprs/exprs.hh"
@@ -34,8 +33,4 @@ public:
 
 protected:
   std::shared_ptr<Expr> expr_{};
-
-private:
-  static auto ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
-                         std::string &out, Expr *expr) -> void;
 };

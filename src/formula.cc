@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstddef>
+#include <stack>
 #include <utility>
 #include <vector>
 
@@ -79,11 +80,6 @@ auto Description(const Expr *expr, std::string &out, uint64_t num) -> void {
     LiteralDescription(expr, out, num);
   }
 }
-} // namespace
-
-[[nodiscard]] auto Formula::Connective() const -> std::string {
-  return TypeToString(expr_->Type());
-}
 
 // Add all the left child into the stack
 //
@@ -91,8 +87,8 @@ auto Description(const Expr *expr, std::string &out, uint64_t num) -> void {
 //  - no left child for literal
 //  - the only child of the UnaryExpr
 //  - the left child of the BinaryExpr
-auto Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
-                         std::string &out, Expr *expr) -> void {
+auto ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
+                std::string &out, Expr *expr) -> void {
   while (true) {
     ::Description(expr, out, 0);
     stack.emplace(expr, 1);
@@ -109,6 +105,11 @@ auto Formula::ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
       expr = children_visitor.ViewChildren()[0].get();
     }
   }
+}
+} // namespace
+
+[[nodiscard]] auto Formula::Connective() const -> std::string {
+  return TypeToString(expr_->Type());
 }
 
 /*
@@ -143,8 +144,10 @@ auto Formula::Description() const -> std::string {
 
     // Only BinaryExpr falls into this case
     // because it has ChildrenSize == 2
-    ExpandLeft(stack, out, children_visitor.ViewChildren()[num].get());
-    ++num;
+    //
+    // Need to increment num here as the ExpandLeft operation may change the
+    // place where num is stored
+    ExpandLeft(stack, out, children_visitor.ViewChildren()[num++].get());
   }
 
   return out;
