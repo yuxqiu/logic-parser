@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <stack>
 
 #include "exprs/exprs.hh"
 #include "formula.hh"

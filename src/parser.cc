@@ -2,6 +2,7 @@
 #include <array>
 #include <cassert>
 #include <memory>
+#include <stack>
 
 #include "exprs/binary.hh"
 #include "exprs/exprs.hh"
