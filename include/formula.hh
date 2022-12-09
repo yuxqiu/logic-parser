@@ -12,8 +12,6 @@
 */
 class Formula {
 public:
-  // We could safely rely on default copy/move constructor/assignment as
-  // the destructor follows the semantics of ref_count
   explicit Formula() = default;
   explicit Formula(std::shared_ptr<Expr> expr) : expr_{std::move(expr)} {}
 

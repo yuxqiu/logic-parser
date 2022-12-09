@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <optional>
+#include <utility>
 
 #include "exprs/exprs.hh"
 #include "formula.hh"
@@ -12,10 +14,13 @@ public:
 
   class ParserOutput {
   public:
-    explicit ParserOutput(Formula owner, std::string raw_formula,
+    explicit ParserOutput(std::optional<Formula> owner, std::string raw_formula,
                           ParseResult result)
-        : formula_(std::move(owner)), raw_formula_(std::move(raw_formula)),
-          result_(result) {}
+        : raw_formula_(std::move(raw_formula)), result_(result) {
+      if (owner.has_value()) {
+        formula_ = std::move(owner.value());
+      }
+    }
 
     [[nodiscard]] auto Formula() -> class Formula & { return formula_; }
     [[nodiscard]] auto Formula() const -> const class Formula & {
@@ -27,7 +32,7 @@ public:
     [[nodiscard]] auto Result() const -> ParseResult { return result_; }
 
   private:
-    class Formula formula_;
+    class Formula formula_ {};
     std::string raw_formula_;
     enum ParseResult result_;
   };

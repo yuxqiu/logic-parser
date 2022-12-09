@@ -39,7 +39,7 @@ auto LiteralDescription(const Expr *expr, std::string &out, uint64_t num)
     InfoVisitor visitor;
     expr->Accept(visitor);
 
-    auto &&infos = visitor.Infos();
+    const auto &infos = visitor.Infos();
     out += infos[0].ToString();
     if (infos.size() == 3) {
       out += "(" + infos[1].ToString() + "," + infos[2].ToString() + ")";
@@ -72,11 +72,12 @@ auto BinaryDescription(const Expr *expr, std::string &out, uint64_t num)
 }
 
 auto Description(const Expr *expr, std::string &out, uint64_t num) -> void {
-  if (Expr::IsBinary(expr->Type())) {
+  const auto type = expr->Type();
+  if (Expr::IsBinary(type)) {
     BinaryDescription(expr, out, num);
-  } else if (Expr::IsUnary(expr->Type())) {
+  } else if (Expr::IsUnary(type)) {
     UnaryDescription(expr, out, num);
-  } else if (Expr::IsLiteral(expr->Type())) {
+  } else if (Expr::IsLiteral(type)) {
     LiteralDescription(expr, out, num);
   }
 }
@@ -130,24 +131,20 @@ auto Formula::Description() const -> std::string {
 
   ExpandLeft(stack, out, expr_.get());
   while (!stack.empty()) {
-    auto &[expr, num] = stack.top();
+    const auto [expr, num] = stack.top();
+    stack.pop();
 
     ::Description(expr, out, num);
 
     ChildrenVisitor children_visitor;
     expr->Accept(children_visitor);
 
-    if (num >= children_visitor.ChildrenSize()) {
-      stack.pop();
-      continue;
-    }
-
     // Only BinaryExpr falls into this case
     // because it has ChildrenSize == 2
-    //
-    // Need to increment num here as the ExpandLeft operation may change the
-    // place where num is stored
-    ExpandLeft(stack, out, children_visitor.ViewChildren()[num++].get());
+    if (num < children_visitor.ChildrenSize()) {
+      stack.emplace(expr, num + 1);
+      ExpandLeft(stack, out, children_visitor.ViewChildren()[num].get());
+    }
   }
 
   return out;
@@ -169,7 +166,6 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
     - cause stack overflow if the Expr is long enough
 
   Destructor of Formula proposes a iterative way to destruct all the formula
-  by using a deque
 
   It will only destruct the formula only if use_count of current formula is == 1
     - if use_count == 0, it's already destroyed

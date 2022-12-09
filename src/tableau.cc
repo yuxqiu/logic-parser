@@ -1,5 +1,4 @@
 #include <cassert>
-#include <deque>
 #include <memory>
 #include <queue>
 #include <utility>
@@ -182,8 +181,6 @@ static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 [[nodiscard]] auto TableauFormula::Expand(const std::shared_ptr<Expr> &expr,
                                           const Token &token)
     -> std::vector<std::vector<std::shared_ptr<Expr>>> {
-  (void)token;
-
   ChildrenVisitor children_visitor;
   expr->Accept(children_visitor);
   auto &&childrens = children_visitor.ViewChildren();
@@ -227,8 +224,7 @@ static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
     // If we are negating literal, we return Neg+Literal
     // by the definition of literals in Tableau
     if (children->Type() == Expr::Type::kLiteral) {
-      return {
-          {std::make_shared<UnaryExpr>(Expr::Type::kNeg, std::move(children))}};
+      return {{expr}};
     }
 
     ChildrenVisitor children_visitor_for_children;
@@ -256,26 +252,18 @@ static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
     }
 
     // If Binary => we negate them based on their rules
-    if (children->Type() == Expr::Type::kAnd ||
-        children->Type() == Expr::Type::kOr) {
-      auto neg_children_left = std::make_shared<UnaryExpr>(
-          Expr::Type::kNeg, std::move(children_of_children[0]));
-      auto neg_children_right = std::make_shared<UnaryExpr>(
+    if (Expr::IsBinary(children->Type())) {
+      auto new_children_left =
+          children->Type() == Expr::Type::kImpl
+              ? std::move(children_of_children[0])
+              : std::make_shared<UnaryExpr>(Expr::Type::kNeg,
+                                            std::move(children_of_children[0]));
+      auto new_children_right = std::make_shared<UnaryExpr>(
           Expr::Type::kNeg, std::move(children_of_children[1]));
       std::shared_ptr<Expr> node = std::make_shared<BinaryExpr>(
-          Expr::Negate(children->Type()), std::move(neg_children_left),
-          std::move(neg_children_right));
+          Expr::Negate(children->Type()), std::move(new_children_left),
+          std::move(new_children_right));
       return {{std::move(node)}};
-    }
-
-    // If implication => Negate it based on its fule
-    if (children->Type() == Expr::Type::kImpl) {
-      auto neg_children_right = std::make_shared<UnaryExpr>(
-          Expr::Type::kNeg, std::move(children_of_children[1]));
-      std::shared_ptr<Expr> impl_node = std::make_shared<BinaryExpr>(
-          Expr::Negate(children->Type()), std::move(children_of_children[0]),
-          std::move(neg_children_right));
-      return {{std::move(impl_node)}};
     }
   }
 
@@ -284,18 +272,20 @@ static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 }
 
 auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool {
-  if (lhs.Type() == rhs.Type() && lhs.Type() == Expr::Type::kUniversal) {
+  const auto lhs_type = lhs.Type();
+  const auto rhs_type = rhs.Type();
+  if (lhs_type == rhs_type && lhs_type == Expr::Type::kUniversal) {
     return lhs.const_num_ > rhs.const_num_;
   }
-  return lhs.Type() > rhs.Type();
+  return lhs_type > rhs_type;
 }
 
 // An encapsulation of Append
 // Help us to filter out literal and Assign formula to their appropriate
 // structure
 auto Theory::Append(const TableauFormula &formula) -> void {
-  if (formula.Type() ==
-      Expr::Type::kLiteral) { // if tableau literal => literal or neg_literal
+  if (Expr::IsLiteral(
+          formula.Type())) { // if tableau literal => literal or neg_literal
     // use description to deal with prop literal and pred literal
     auto literal = formula.Description();
     if (neg_literals_.find(Token{literal}) != neg_literals_.end()) {
@@ -307,7 +297,7 @@ auto Theory::Append(const TableauFormula &formula) -> void {
   }
 
   if (formula.Type() == Expr::Type::kNeg &&
-      formula.ViewChildren()[0].Type() == Expr::Type::kLiteral) {
+      Expr::IsLiteral(formula.ViewChildren()[0].Type())) {
     auto literal = formula.ViewChildren()[0].Description();
     if (literals_.find(Token{literal}) != literals_.end()) {
       close_ = true;
@@ -373,18 +363,16 @@ auto Theory::TryExpand() -> std::vector<Theory> {
 }
 
 auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
-  std::deque<Theory> queue;
+  std::vector<Theory> queue;
   queue.emplace_back(TableauFormula{parser_out.Formula()});
 
   bool undecidable{
       false}; // to mark whether we have encountered undecidable formula
 
-  while (!queue.empty()) {
-    Theory theory{std::move(queue.front())};
-    queue.pop_front();
+  for (decltype(queue)::size_type i = 0; i < queue.size(); ++i) {
+    Theory &theory = queue[i];
 
     std::vector theories = theory.TryExpand();
-
     if (theory.Undecidable()) {
       undecidable = true;
       continue;

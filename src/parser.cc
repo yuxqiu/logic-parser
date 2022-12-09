@@ -171,7 +171,11 @@ auto ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer, Token &token)
 
 auto ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer, Token &token)
     -> void {
-  (void)tokenizer;
+  if (tokenizer.Empty()) {
+    stack.SetError();
+    return;
+  }
+
   Token next_token = tokenizer.PeekToken();
   tokenizer.PopToken();
 
@@ -312,9 +316,9 @@ auto Parser::Parse(std::string line) -> ParserOutput {
       - top formula is not complete (missing symbol - incorrect syntax)
       - top formula is in error (unmatched symbol - incorrect syntax)
   */
-  auto expr = stack.Holder();
+  auto &&expr = stack.Holder();
   if (stack.Error() || !stack.empty() || (proposition == predicate) || !expr) {
-    return ParserOutput{Formula{}, std::move(line), ParseResult::kNotAFormula};
+    return ParserOutput{{}, std::move(line), ParseResult::kNotAFormula};
   }
 
   return ParserOutput{Formula{std::move(expr)}, std::move(line),

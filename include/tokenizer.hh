@@ -44,13 +44,14 @@ public:
     ConsumeWhitespace();
   }
 
-  [[nodiscard]] auto Empty() const -> bool { return start_ == expr_.size(); }
+  [[nodiscard]] auto Empty() const -> bool {
+    return start_ == std::string::npos;
+  }
 
 private:
   void ConsumeWhitespace() {
     const static char *k_whitespaces = " \t\n\v\f\r";
     start_ = expr_.find_first_not_of(k_whitespaces, start_);
-    start_ = start_ == std::string::npos ? expr_.size() : start_;
   }
 
   std::string expr_;
