@@ -22,8 +22,8 @@ public:
       }
     }
 
-    [[nodiscard]] auto Formula() -> class Formula & { return formula_; }
-    [[nodiscard]] auto Formula() const -> const class Formula & {
+    [[nodiscard]] auto GetFormula() -> class Formula & { return formula_; }
+    [[nodiscard]] auto GetFormula() const -> const class Formula & {
       return formula_;
     }
     [[nodiscard]] auto RawFormula() const -> const std::string & {

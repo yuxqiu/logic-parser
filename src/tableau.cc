@@ -367,7 +367,7 @@ auto Theory::TryExpand() -> std::vector<Theory> {
 
 auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
   std::vector<Theory> queue;
-  queue.emplace_back(TableauFormula{parser_out.Formula()});
+  queue.emplace_back(TableauFormula{parser_out.GetFormula()});
 
   bool undecidable{
       false}; // to mark whether we have encountered undecidable formula

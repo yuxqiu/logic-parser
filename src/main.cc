@@ -11,14 +11,14 @@
 auto PrintParserInformation(std::ostream &out,
                             const Parser::ParserOutput &parser_out) -> void {
   const Parser::ParseResult result = parser_out.Result();
-  const Formula &formula = parser_out.Formula();
+  const Formula &formula = parser_out.GetFormula();
 
   if (result == Parser::ParseResult::kNotAFormula) {
     out << parser_out.RawFormula() << " is not a formula.\n";
     return;
   }
 
-  const std::string &line = parser_out.Formula().Description();
+  const std::string &line = parser_out.GetFormula().Description();
   if (result == Parser::ParseResult::kProposition) {
     if (Expr::IsLiteral(formula.Type())) {
       out << line << " is a proposition.\n";
@@ -74,7 +74,7 @@ auto PrintTableauInformation(std::ostream &out,
                              const Parser::ParserOutput &parser_out,
                              const Tableau::TableauResult &tableau_out)
     -> void {
-  const std::string &line = parser_out.Formula().Description();
+  const std::string &line = parser_out.GetFormula().Description();
   switch (tableau_out) {
   case Tableau::TableauResult::kUnsatisfiable:
     out << line << " is not satisfiable.\n";
