@@ -15,59 +15,10 @@
 
 TableauFormula::TableauFormula(const Formula &formula) : Formula(formula) {}
 
-[[nodiscard]] auto TableauFormula::Expand(ConstantManager &manager)
-    -> std::vector<std::vector<TableauFormula>> {
-  Token token;
-
-  if (Type() == Expr::Type::kUniversal) {
-    /*
-      if Universal Formula => we need to get a constant based on
-        - the number of constants used by the Formula
-        - the number of available constants
-    */
-    std::optional requested_const = manager.GetConsts(const_num_);
-    if (!requested_const.has_value()) {
-      return {};
-    }
-    ++const_num_;
-    token = std::move(requested_const.value());
-  } else if (Type() == Expr::Type::kExist) {
-    /*
-      if Existential Formula => we need to add a constant to the list based on
-        - the availability of the constant manager
-    */
-    if (!manager.CanAddConst()) {
-      return {};
-    }
-    token = manager.AddConst();
-  }
-
-  /*
-    Try to expand and Encapsulate all back to the TableauFormula
-
-    This provides encapsulation and also ensures that the lifetime of the
-    shared_ptr is properly managed
-  */
-  std::vector expansion = TableauFormula::Expand(expr_, token);
-  std::vector<std::vector<TableauFormula>> ret;
-  ret.reserve(expansion.size());
-
-  for (auto &one_expansion : expansion) {
-    std::vector<TableauFormula> formulas;
-    formulas.reserve(one_expansion.size());
-    for (auto &&new_formula : one_expansion) {
-      formulas.emplace_back(Formula{std::move(new_formula)});
-    }
-    ret.emplace_back(std::move(formulas));
-  }
-
-  return ret;
-}
-
-static auto Flatten(std::vector<Expr *> &flatten,
-                    std::vector<uint64_t> &parents,
-                    std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
-                    const Token &src) -> void {
+namespace {
+auto Flatten(std::vector<Expr *> &flatten, std::vector<uint64_t> &parents,
+             std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
+             const Token &src) -> void {
   for (std::vector<std::vector<Expr>>::size_type i = 1; i < flatten.size();
        ++i) {
     if (!to_merge[i].empty()) {
@@ -97,10 +48,10 @@ static auto Flatten(std::vector<Expr *> &flatten,
   }
 }
 
-static auto Merge(const Token &src, std::vector<Expr *> &flatten,
-                  std::vector<uint64_t> &parents,
-                  std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
-                  const Token &dst) -> void {
+auto Merge(const Token &src, std::vector<Expr *> &flatten,
+           std::vector<uint64_t> &parents,
+           std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
+           const Token &dst) -> void {
   for (auto i = to_merge.size() - 1; i > 0; --i) {
     if (Expr::IsLiteral(flatten[i]->Type())) { // Literal => constructs literal
       InfoVisitor info_visitor;
@@ -148,8 +99,8 @@ static auto Merge(const Token &src, std::vector<Expr *> &flatten,
   }
 }
 
-static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
-                           const Token &dst) -> std::shared_ptr<Expr> {
+auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
+                    const Token &dst) -> std::shared_ptr<Expr> {
   // Potential Optimization Here
   // Encapsulate them inside a struct is better for locality
   std::vector<Expr *> flatten{{}, expr.get()};
@@ -178,29 +129,29 @@ static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
   return std::move(to_merge[0][0]);
 }
 
-[[nodiscard]] auto TableauFormula::Expand(const std::shared_ptr<Expr> &expr,
-                                          const Token &token)
+[[nodiscard]] auto Expand(std::shared_ptr<Expr> expr, const Token &token)
     -> std::vector<std::vector<std::shared_ptr<Expr>>> {
   ChildrenVisitor children_visitor;
   expr->Accept(children_visitor);
   auto &&childrens = children_visitor.ViewChildren();
 
-  if (expr->Type() == Expr::Type::kAnd) { // Alpha expansion
+  const auto expr_type = expr->Type();
+
+  if (expr_type == Expr::Type::kAnd) { // Alpha expansion
     return {std::move(childrens)};
   }
 
-  if (expr->Type() == Expr::Type::kOr) { // Beta expansion
+  if (expr_type == Expr::Type::kOr) { // Beta expansion
     return {{std::move(childrens[0])}, {std::move(childrens[1])}};
   }
 
-  if (expr->Type() == Expr::Type::kImpl) { // Beta expansion
+  if (expr_type == Expr::Type::kImpl) { // Beta expansion
     return {{std::make_shared<UnaryExpr>(Expr::Type::kNeg,
                                          std::move(childrens[0]))},
             {std::move(childrens[1])}};
   }
 
-  if (expr->Type() == Expr::Type::kExist ||
-      expr->Type() == Expr::Type::kUniversal) {
+  if (expr_type == Expr::Type::kExist || expr_type == Expr::Type::kUniversal) {
     // Delta/Gamma expansion
     /*
       1. Copy every node that needs to be copied
@@ -218,13 +169,15 @@ static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
                             token)}};
   }
 
-  if (expr->Type() == Expr::Type::kNeg) {
+  if (expr_type == Expr::Type::kNeg) {
     std::shared_ptr<Expr> children = std::move(childrens[0]);
+
+    const auto neg_expr_child_type = children->Type();
 
     // If we are negating literal, we return Neg+Literal
     // by the definition of literals in Tableau
-    if (children->Type() == Expr::Type::kLiteral) {
-      return {{expr}};
+    if (neg_expr_child_type == Expr::Type::kLiteral) {
+      return {{std::move(expr)}};
     }
 
     ChildrenVisitor children_visitor_for_children;
@@ -233,35 +186,35 @@ static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 
     // If Unary
     // If Neg, we skip the double Negation
-    if (children->Type() == Expr::Type::kNeg) {
+    if (neg_expr_child_type == Expr::Type::kNeg) {
       return {{std::move(children_of_children[0])}};
     }
 
     // Otherwise, we negate the Quantified Formula based on their rule
-    if (children->Type() == Expr::Type::kExist ||
-        children->Type() == Expr::Type::kUniversal) {
+    if (neg_expr_child_type == Expr::Type::kExist ||
+        neg_expr_child_type == Expr::Type::kUniversal) {
       InfoVisitor info_visitor;
       children->Accept(info_visitor);
       auto &&infos = info_visitor.Infos();
       assert(infos.size() == 1);
 
       return {{std::make_shared<QuantifiedUnaryExpr>(
-          Expr::Negate(children->Type()), std::move(infos[0]),
+          Expr::Negate(neg_expr_child_type), std::move(infos[0]),
           std::make_shared<UnaryExpr>(Expr::Type::kNeg,
                                       std::move(children_of_children[0])))}};
     }
 
     // If Binary => we negate them based on their rules
-    if (Expr::IsBinary(children->Type())) {
+    if (Expr::IsBinary(neg_expr_child_type)) {
       auto new_children_left =
-          children->Type() == Expr::Type::kImpl
+          neg_expr_child_type == Expr::Type::kImpl
               ? std::move(children_of_children[0])
               : std::make_shared<UnaryExpr>(Expr::Type::kNeg,
                                             std::move(children_of_children[0]));
       auto new_children_right = std::make_shared<UnaryExpr>(
           Expr::Type::kNeg, std::move(children_of_children[1]));
       std::shared_ptr<Expr> node = std::make_shared<BinaryExpr>(
-          Expr::Negate(children->Type()), std::move(new_children_left),
+          Expr::Negate(neg_expr_child_type), std::move(new_children_left),
           std::move(new_children_right));
       return {{std::move(node)}};
     }
@@ -269,6 +222,56 @@ static auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 
   assert(false);
   return {};
+}
+} // namespace
+
+[[nodiscard]] auto TableauFormula::Expand(ConstantManager &manager)
+    -> std::vector<std::vector<TableauFormula>> {
+  Token token;
+
+  if (Type() == Expr::Type::kUniversal) {
+    /*
+      if Universal Formula => we need to get a constant based on
+        - the number of constants used by the Formula
+        - the number of available constants
+    */
+    std::optional requested_const = manager.GetConsts(const_num_);
+    if (!requested_const.has_value()) {
+      return {};
+    }
+    ++const_num_;
+    token = std::move(requested_const.value());
+  } else if (Type() == Expr::Type::kExist) {
+    /*
+      if Existential Formula => we need to add a constant to the list based on
+        - the availability of the constant manager
+    */
+    if (!manager.CanAddConst()) {
+      return {};
+    }
+    token = manager.AddConst();
+  }
+
+  /*
+    Try to expand and Encapsulate all back to the TableauFormula
+
+    This provides encapsulation and also ensures that the lifetime of the
+    shared_ptr is properly managed
+  */
+  std::vector expansion = ::Expand(expr_, token);
+  std::vector<std::vector<TableauFormula>> ret;
+  ret.reserve(expansion.size());
+
+  for (auto &one_expansion : expansion) {
+    std::vector<TableauFormula> formulas;
+    formulas.reserve(one_expansion.size());
+    for (auto &&new_formula : one_expansion) {
+      formulas.emplace_back(Formula{std::move(new_formula)});
+    }
+    ret.emplace_back(std::move(formulas));
+  }
+
+  return ret;
 }
 
 auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool {

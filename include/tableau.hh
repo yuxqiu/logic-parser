@@ -21,15 +21,9 @@ private:
   // next needed constant num
   uint64_t const_num_{0};
 
-  [[nodiscard]] static auto Expand(const std::shared_ptr<Expr> &expr,
-                                   const Token &token)
-      -> std::vector<std::vector<std::shared_ptr<Expr>>>;
-
   friend auto operator>(const TableauFormula &lhs, const TableauFormula &rhs)
       -> bool;
 };
-
-auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool;
 
 class Theory {
 public:
