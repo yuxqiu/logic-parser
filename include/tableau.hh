@@ -10,7 +10,7 @@
 #include "formula.hh"
 #include "parser.hh"
 
-class TableauFormula : public Formula {
+class TableauFormula final : public Formula {
 public:
   explicit TableauFormula(const Formula &formula);
 

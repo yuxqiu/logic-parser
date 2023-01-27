@@ -34,7 +34,7 @@ struct UnaryExpr : public Expr {
 
 // A Special UnaryExpr Expx where E is a quantifier
 // Need to handle this case (by checking an additional Token)
-struct QuantifiedUnaryExpr : public UnaryExpr {
+struct QuantifiedUnaryExpr final : public UnaryExpr {
 public:
   explicit QuantifiedUnaryExpr(enum Type type, Token var)
       : UnaryExpr(type), var_(std::move(var)) {}

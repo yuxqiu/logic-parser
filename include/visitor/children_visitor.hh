@@ -9,7 +9,7 @@
 
 #include "expr_visitor.hh"
 
-class ChildrenVisitor : public ExprVisitor {
+class ChildrenVisitor final : public ExprVisitor {
 public:
   auto Visit(const Literal &literal) -> void final { (void)literal; }
 

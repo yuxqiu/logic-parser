@@ -24,7 +24,7 @@ struct Literal : public Expr {
   Token val_;
 };
 
-struct PredicateLiteral : public Literal {
+struct PredicateLiteral final : public Literal {
   explicit PredicateLiteral(Token val, Token left, Token right)
       : Literal(std::move(val)), left_var_(std::move(left)),
         right_var_(std::move(right)) {}

@@ -9,7 +9,7 @@
 
 #include "expr_visitor.hh"
 
-class InfoVisitor : public ExprVisitor {
+class InfoVisitor final : public ExprVisitor {
 public:
   auto Visit(const Literal &literal) -> void final {
     infos_.emplace_back(literal.val_);
