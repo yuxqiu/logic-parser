@@ -1,6 +1,6 @@
-## Tableau
+# logic-parser
 
-Tableau is a one-pass iterative parser and SAT solver for propositional and first-order logic.
+This project implements a one-pass iterative parser and SAT solver for propositional and first-order logic.
 
 ## Brief
 
