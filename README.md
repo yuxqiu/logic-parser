@@ -65,4 +65,4 @@ Many things could be improved in this project
 
 ## License
 
-[MIT LICENSE](./license)
+[MIT LICENSE](./LICENSE)
