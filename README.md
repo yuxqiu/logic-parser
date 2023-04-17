@@ -8,9 +8,9 @@ It can pass the propositional logic that follows the syntax shown below:
 
 $$
 \begin{align}
-    Formula &:= Prop\\
-            &| \; \neg Formula\\
-            &| \; (Formula \; * \; Formula)
+    \text{Formula} &:= \text{Prop}\\
+            &\mid \neg \text{Formula}\\
+            &\mid \text{(Formula * Formula)}
 \end{align}
 $$
 
@@ -22,14 +22,14 @@ The exact syntax looks like this:
 
 $$
 \begin{align}
-    Var &:= x, y, z, w\\
-    Pred &:= P, Q, R, S\\
-    Connective &:= \&, \^{}, >\\
-    Formula &:= Pred(Var, Var)\\
-            &| \; \neg Formula\\
-            &| \; E \; Formula \; (\exists)\\
-            &| \; A \; Formula \; (\forall)\\
-            &| \; (Formula \; Connective \; Formula)
+    \text{Var} &:= x, y, z, w\\
+    \text{Pred} &:= P, Q, R, S\\
+    \text{Connective} &:= \text{\\\&, } \hat{\text{ }} \text{, >}\\
+    \text{Formula} &:= \text{Pred(Var, Var)}\\
+            &\mid \neg \text{Formula}\\
+            &\mid \text{E Var Formula } (\exists)\\
+            &\mid \text{A Var Formula } (\forall)\\
+            &\mid \text{(Formula Connective Formula)}
 \end{align}
 $$
 
