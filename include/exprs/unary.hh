@@ -32,7 +32,7 @@ struct UnaryExpr : public Expr {
   std::shared_ptr<Expr> expr_{};
 };
 
-// A Special UnaryExpr Expx where E is a quantifier
+// A Special UnaryExpr Expr where E is a quantifier
 // Need to handle this case (by checking an additional Token)
 struct QuantifiedUnaryExpr final : public UnaryExpr {
 public:
