@@ -19,16 +19,18 @@ auto PrintParserInformation(std::ostream &out,
   }
 
   const std::string &line = parser_out.GetFormula().Description();
+  const auto type = formula.Type();
+
   if (result == Parser::ParseResult::kProposition) {
-    if (Expr::IsLiteral(formula.Type())) {
+    if (Expr::IsLiteral(type)) {
       out << line << " is a proposition.\n";
       return;
     }
-    if (Expr::IsUnary(formula.Type())) {
+    if (Expr::IsUnary(type)) {
       out << line << " is a negation of a propositional formula.\n";
       return;
     }
-    if (Expr::IsBinary(formula.Type())) {
+    if (Expr::IsBinary(type)) {
       out << line << " is a binary connective propositional formula. ";
       std::vector children = formula.ViewChildren();
       assert(children.size() == 2);
@@ -41,23 +43,23 @@ auto PrintParserInformation(std::ostream &out,
   }
 
   if (result == Parser::ParseResult::kPredicate) {
-    if (Expr::IsLiteral(formula.Type())) {
+    if (Expr::IsLiteral(type)) {
       out << line << " is an atom.\n";
       return;
     }
-    if (formula.Type() == Expr::Type::kNeg) {
+    if (type == Expr::Type::kNeg) {
       out << line << " is a negation of a first order logic formula.\n";
       return;
     }
-    if (formula.Type() == Expr::Type::kUniversal) {
+    if (type == Expr::Type::kUniversal) {
       out << line << " is a universally quantified formula.\n";
       return;
     }
-    if (formula.Type() == Expr::Type::kExist) {
+    if (type == Expr::Type::kExist) {
       out << line << " is an existentially quantified formula.\n";
       return;
     }
-    if (Expr::IsBinary(formula.Type())) {
+    if (Expr::IsBinary(type)) {
       out << line << " is a binary connective first order formula. ";
       std::vector children = formula.ViewChildren();
       assert(children.size() == 2);

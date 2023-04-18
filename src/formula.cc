@@ -50,9 +50,9 @@ auto LiteralDescription(const Expr *expr, std::string &out, uint64_t num)
 auto UnaryDescription(const Expr *expr, std::string &out, uint64_t num)
     -> void {
   if (num == 0) {
-    out += TypeToString(expr->Type());
-    if (expr->Type() == Expr::Type::kExist ||
-        expr->Type() == Expr::Type::kUniversal) {
+    const auto type = expr->Type();
+    out += TypeToString(type);
+    if (type == Expr::Type::kExist || type == Expr::Type::kUniversal) {
       InfoVisitor visitor;
       expr->Accept(visitor);
       out += visitor.Infos()[0].ToString();

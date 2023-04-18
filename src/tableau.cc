@@ -37,8 +37,9 @@ auto Flatten(std::vector<Expr *> &flatten, std::vector<uint64_t> &parents,
       InfoVisitor info_visitor;
       (*it)->Accept(info_visitor);
 
-      if (((*it)->Type() == Expr::Type::kExist ||
-           (*it)->Type() == Expr::Type::kUniversal) &&
+      const auto type = (*it)->Type();
+
+      if ((type == Expr::Type::kExist || type == Expr::Type::kUniversal) &&
           info_visitor.Infos()[0] == src) {
         // If var is bounded by new quantifier, store it to to_merge directly
         // we will then merge it by checking the same condition
@@ -53,7 +54,9 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
            std::vector<std::vector<std::shared_ptr<Expr>>> &to_merge,
            const Token &dst) -> void {
   for (auto i = to_merge.size() - 1; i > 0; --i) {
-    if (Expr::IsLiteral(flatten[i]->Type())) { // Literal => constructs literal
+    const auto flattened_type = flatten[i]->Type();
+
+    if (Expr::IsLiteral(flattened_type)) { // Literal => constructs literal
       InfoVisitor info_visitor;
       flatten[i]->Accept(info_visitor);
       auto &infos = info_visitor.Infos();
@@ -65,15 +68,15 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
       continue;
     }
 
-    if (Expr::IsBinary(flatten[i]->Type())) { // Construct Binary
+    if (Expr::IsBinary(flattened_type)) { // Construct Binary
       to_merge[parents[i]].push_back(std::make_shared<BinaryExpr>(
-          flatten[i]->Type(), std::move(to_merge[i][0]),
+          flattened_type, std::move(to_merge[i][0]),
           std::move(to_merge[i][1])));
       continue;
     }
 
-    if (flatten[i]->Type() == Expr::Type::kExist ||
-        flatten[i]->Type() == Expr::Type::kUniversal) { // Quantified Unary
+    if (flattened_type == Expr::Type::kExist ||
+        flattened_type == Expr::Type::kUniversal) { // Quantified Unary
       InfoVisitor info_visitor;
       flatten[i]->Accept(info_visitor);
       auto &infos = info_visitor.Infos();
@@ -82,16 +85,14 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
         to_merge[parents[i]].push_back(std::move(to_merge[i][0]));
       } else { // otherwise => Construct Quantified Expr
         to_merge[parents[i]].push_back(std::make_shared<QuantifiedUnaryExpr>(
-            flatten[i]->Type(), std::move(infos[0]),
-            std::move(to_merge[i][0])));
+            flattened_type, std::move(infos[0]), std::move(to_merge[i][0])));
       }
       continue;
     }
 
-    if (flatten[i]->Type() ==
-        Expr::Type::kNeg) { // Negation => Construct UnaryExpr
+    if (flattened_type == Expr::Type::kNeg) { // Negation => Construct UnaryExpr
       to_merge[parents[i]].push_back(std::make_shared<UnaryExpr>(
-          flatten[i]->Type(), std::move(to_merge[i][0])));
+          flattened_type, std::move(to_merge[i][0])));
       continue;
     }
 
@@ -110,8 +111,10 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
   InfoVisitor info_visitor;
   expr->Accept(info_visitor);
 
-  if ((expr->Type() == Expr::Type::kExist ||
-       expr->Type() == Expr::Type::kUniversal) &&
+  const auto expr_type = expr->Type();
+
+  if ((expr_type == Expr::Type::kExist ||
+       expr_type == Expr::Type::kUniversal) &&
       info_visitor.Infos()[0] == src) {
     // If var is bounded by new quantifier, store it to to_merge directly
     // we will then merge it by checking the same condition
@@ -228,8 +231,9 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 [[nodiscard]] auto TableauFormula::Expand(ConstantManager &manager)
     -> std::vector<std::vector<TableauFormula>> {
   Token token;
+  const auto type = Type();
 
-  if (Type() == Expr::Type::kUniversal) {
+  if (type == Expr::Type::kUniversal) {
     /*
       if Universal Formula => we need to get a constant based on
         - the number of constants used by the Formula
@@ -241,7 +245,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
     }
     ++const_num_;
     token = std::move(requested_const.value());
-  } else if (Type() == Expr::Type::kExist) {
+  } else if (type == Expr::Type::kExist) {
     /*
       if Existential Formula => we need to add a constant to the list based on
         - the availability of the constant manager
@@ -287,8 +291,10 @@ auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool {
 // Help us to filter out literal and Assign formula to their appropriate
 // structure
 auto Theory::Append(const TableauFormula &formula) -> void {
+  const auto formula_type = formula.Type();
+
   if (Expr::IsLiteral(
-          formula.Type())) { // if tableau literal => literal or neg_literal
+          formula_type)) { // if tableau literal => literal or neg_literal
     // use description to deal with prop literal and pred literal
     auto literal = formula.Description();
     if (neg_literals_.find(Token{literal}) != neg_literals_.end()) {
@@ -299,7 +305,7 @@ auto Theory::Append(const TableauFormula &formula) -> void {
     return;
   }
 
-  if (formula.Type() == Expr::Type::kNeg &&
+  if (formula_type == Expr::Type::kNeg &&
       Expr::IsLiteral(formula.ViewChildren()[0].Type())) {
     auto literal = formula.ViewChildren()[0].Description();
     if (literals_.find(Token{literal}) != literals_.end()) {
@@ -326,6 +332,8 @@ auto Theory::TryExpand() -> std::vector<Theory> {
   //  - no more available const for universal formula
   auto expansions = formula.Expand(manager_);
 
+  const auto formula_type = formula.Type();
+
   /*
     After trying to expand there are only three possibilities:
       - we could expand
@@ -339,7 +347,7 @@ auto Theory::TryExpand() -> std::vector<Theory> {
     In the second case, we need to mark our theory as undecidable
   */
   if (expansions.empty()) {
-    if (formula.Type() == Expr::Type::kExist) {
+    if (formula_type == Expr::Type::kExist) {
       undecidable_ = true;
     }
     return {};
@@ -355,7 +363,7 @@ auto Theory::TryExpand() -> std::vector<Theory> {
     }
 
     // Gamma formula needs to be added back to the Theory
-    if (formula.Type() == Expr::Type::kUniversal) {
+    if (formula_type == Expr::Type::kUniversal) {
       new_theory.Append(formula);
     }
 
