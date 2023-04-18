@@ -1,6 +1,6 @@
 #pragma once
 
-#include "exprs/exprs.hh"
+#include "exprs/expr.hh"
 
 struct Literal : public Expr {
   explicit Literal(Token val) : Expr(Type::kLiteral), val_{std::move(val)} {}

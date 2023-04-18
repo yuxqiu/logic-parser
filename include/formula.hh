@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "exprs/exprs.hh"
+#include "exprs/expr.hh"
 #include "formula.hh"
 
 /*

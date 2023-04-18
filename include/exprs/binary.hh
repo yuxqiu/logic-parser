@@ -1,6 +1,6 @@
 #pragma once
 
-#include "exprs/exprs.hh"
+#include "exprs/expr.hh"
 
 struct BinaryExpr final : public Expr {
   BinaryExpr() = default;

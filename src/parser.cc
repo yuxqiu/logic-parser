@@ -5,7 +5,7 @@
 #include <stack>
 
 #include "exprs/binary.hh"
-#include "exprs/exprs.hh"
+#include "exprs/expr.hh"
 #include "exprs/literal.hh"
 #include "exprs/unary.hh"
 #include "formula.hh"

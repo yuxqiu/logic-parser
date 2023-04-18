@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "exprs/exprs.hh"
+#include "exprs/expr.hh"
 #include "formula.hh"
 #include "visitor/children_visitor.hh"
 #include "visitor/info_visitor.hh"

@@ -1,6 +1,6 @@
 #include <cassert>
 
-#include "exprs/exprs.hh"
+#include "exprs/expr.hh"
 
 auto Expr::Negate(enum Expr::Type type) -> enum Expr::Type {
   switch (type){
