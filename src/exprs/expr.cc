@@ -1,6 +1,7 @@
 #include <cassert>
 
 #include "exprs/expr.hh"
+#include "utils/helper.hh"
 
 auto Expr::Negate(enum Expr::Type type) -> enum Expr::Type {
   switch (type){
@@ -11,7 +12,5 @@ auto Expr::Negate(enum Expr::Type type) -> enum Expr::Type {
     case Type::kUniversal : return Type::kExist;
     case Type::kNull : case Type::kLiteral : case Type::kNeg : break;
   }
-
-assert(false);
-return Type::kNull;
+unreachable();
 }

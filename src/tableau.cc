@@ -10,6 +10,7 @@
 #include "formula.hh"
 #include "tableau.hh"
 #include "tokenizer.hh"
+#include "utils/helper.hh"
 #include "visitor/children_visitor.hh"
 #include "visitor/info_visitor.hh"
 
@@ -96,7 +97,7 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
       continue;
     }
 
-    assert(false);
+    unreachable();
   }
 }
 
@@ -223,8 +224,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
     }
   }
 
-  assert(false);
-  return {};
+  unreachable();
 }
 } // namespace
 

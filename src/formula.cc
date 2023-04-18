@@ -6,6 +6,7 @@
 
 #include "exprs/expr.hh"
 #include "formula.hh"
+#include "utils/helper.hh"
 #include "visitor/children_visitor.hh"
 #include "visitor/info_visitor.hh"
 
@@ -28,9 +29,7 @@ auto TypeToString(enum Expr::Type type) -> std::string {
   case Expr::Type::kLiteral:
     break;
   }
-
-  assert(false);
-  return "Unreachable";
+  unreachable();
 }
 
 auto LiteralDescription(const Expr *expr, std::string &out, uint64_t num)
