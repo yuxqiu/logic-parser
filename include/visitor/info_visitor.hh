@@ -7,27 +7,25 @@
 #include "exprs/literal.hh"
 #include "exprs/unary.hh"
 
-#include "expr_visitor.hh"
-
-class InfoVisitor final : public ExprVisitor {
+class InfoVisitor {
 public:
-  auto Visit(const Literal &literal) -> void final {
+  auto operator()(const Literal &literal) -> void {
     infos_.push_back(literal.val_);
   }
 
-  auto Visit(const PredicateLiteral &predicate) -> void final {
+  auto operator()(const PredicateLiteral &predicate) -> void {
     infos_.push_back(predicate.val_);
     infos_.push_back(predicate.left_var_);
     infos_.push_back(predicate.right_var_);
   }
 
-  auto Visit(const UnaryExpr &unary) -> void final { (void)unary; }
+  auto operator()(const UnaryExpr &unary) -> void { (void)unary; }
 
-  auto Visit(const QuantifiedUnaryExpr &quantified) -> void final {
+  auto operator()(const QuantifiedUnaryExpr &quantified) -> void {
     infos_.push_back(quantified.var_);
   }
 
-  auto Visit(const BinaryExpr &binary) -> void final { (void)binary; }
+  auto operator()(const BinaryExpr &binary) -> void { (void)binary; }
 
   auto Infos() -> std::vector<Token> & { return infos_; }
 

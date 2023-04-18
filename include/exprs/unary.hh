@@ -1,35 +1,41 @@
 #pragma once
 
-#include "exprs/expr.hh"
+#include <memory>
 
-struct UnaryExpr : public Expr {
-  explicit UnaryExpr(ExprKind type) : Expr(type) {}
+#include "exprs/kind.hh"
+#include "tokenizer.hh"
+
+class Expr;
+
+struct UnaryExpr {
+public:
+  explicit UnaryExpr(ExprKind type) : type_{type} {}
   explicit UnaryExpr(ExprKind type, std::shared_ptr<Expr> expr)
-      : Expr(type), expr_(std::move(expr)) {}
+      : expr_(std::move(expr)), type_{type} {}
 
-  auto Append(std::shared_ptr<Expr> expr) -> void final {
+  [[nodiscard]] auto Type() const -> ExprKind { return type_; }
+
+  auto Append(std::shared_ptr<Expr> expr) -> void {
     if (expr_) {
-      SetError();
+      error_ = true;
       return;
     }
 
     expr_ = std::move(expr);
   }
 
-  auto Append(ExprKind type) -> void final {
+  auto Append(ExprKind type) -> void {
     (void)type;
-    SetError();
+    error_ = true;
   }
 
-  [[nodiscard]] auto Complete() const -> bool final {
-    return Type() != ExprKind::kNull && expr_;
-  }
-
-  auto Accept(ExprVisitor &visitor) const -> void override {
-    visitor.Visit(*this);
+  [[nodiscard]] auto Complete() const -> bool {
+    return type_ != ExprKind::kNull && expr_;
   }
 
   std::shared_ptr<Expr> expr_{};
+  ExprKind type_;
+  bool error_ = false;
 };
 
 // A Special UnaryExpr Expr where E is a quantifier
@@ -41,10 +47,6 @@ public:
   explicit QuantifiedUnaryExpr(ExprKind type, Token var,
                                std::shared_ptr<Expr> expr)
       : UnaryExpr(type, std::move(expr)), var_(std::move(var)) {}
-
-  auto Accept(ExprVisitor &visitor) const -> void final {
-    visitor.Visit(*this);
-  }
 
   Token var_;
 };

@@ -1,38 +1,39 @@
 #pragma once
 
-#include "exprs/expr.hh"
+#include <memory>
 
-struct Literal : public Expr {
-  explicit Literal(Token val)
-      : Expr(ExprKind::kLiteral), val_{std::move(val)} {}
+#include "exprs/kind.hh"
+#include "tokenizer.hh"
 
-  auto Append(std::shared_ptr<Expr> expr) -> void final {
+class Expr;
+
+struct Literal {
+public:
+  explicit Literal(Token val) : val_{std::move(val)} {}
+
+  [[nodiscard]] static auto Type() -> ExprKind { return ExprKind::kLiteral; }
+
+  auto Append(const std::shared_ptr<Expr> &expr) -> void {
     (void)expr;
-    SetError();
+    error_ = true;
   }
 
-  auto Append(ExprKind type) -> void final {
+  auto Append(ExprKind type) -> void {
     (void)type;
-    SetError();
+    error_ = true;
   }
 
-  [[nodiscard]] auto Complete() const -> bool final { return true; }
-
-  auto Accept(ExprVisitor &visitor) const -> void override {
-    visitor.Visit(*this);
-  }
+  [[nodiscard]] static auto Complete() -> bool { return true; }
 
   Token val_;
+  bool error_ = false;
 };
 
 struct PredicateLiteral final : public Literal {
+public:
   explicit PredicateLiteral(Token val, Token left, Token right)
       : Literal(std::move(val)), left_var_(std::move(left)),
         right_var_(std::move(right)) {}
-
-  auto Accept(ExprVisitor &visitor) const -> void final {
-    visitor.Visit(*this);
-  }
 
   Token left_var_, right_var_;
 };

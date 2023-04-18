@@ -1,45 +1,37 @@
 #pragma once
 
-#include <memory>
-#include <string>
-#include <vector>
+#include <variant>
 
-#include "constant.hh"
+#include "exprs/binary.hh"
 #include "exprs/kind.hh"
-#include "tokenizer.hh"
-#include "visitor/expr_visitor.hh"
+#include "exprs/literal.hh"
+#include "exprs/unary.hh"
 
-class Expr {
+using ExprInternal = std::variant<Literal, PredicateLiteral, UnaryExpr,
+                                  QuantifiedUnaryExpr, BinaryExpr>;
+
+class Expr : public ExprInternal {
 public:
-  [[nodiscard]] auto Type() const -> ExprKind { return type_; }
-  auto SetType(ExprKind type) -> void { type_ = type; }
+  //   use variant constructor
+  using ExprInternal::ExprInternal;
 
-  // Get/Set error during constructing stage
-  [[nodiscard]] auto Error() const -> bool { return error_; }
-  auto SetError() -> void { error_ = true; }
+  [[nodiscard]] auto Type() const -> ExprKind {
+    return std::visit([](const auto &expr) { return expr.Type(); }, *this);
+  }
 
-  explicit Expr() = default;
-  explicit Expr(ExprKind type) : type_(type) {}
+  [[nodiscard]] auto Error() const -> bool {
+    return std::visit([](const auto &expr) { return expr.error_; }, *this);
+  }
 
-  virtual ~Expr() = default;
-  Expr(const Expr &&) = delete;
-  Expr(Expr &&) = delete;
-  auto operator=(const Expr &) -> Expr & = delete;
-  auto operator=(Expr &&) -> Expr & = delete;
+  auto Append(const std::shared_ptr<Expr> &expr_append) -> void {
+    std::visit([&expr_append](auto &expr) { expr.Append(expr_append); }, *this);
+  }
 
-  // Append determines which inserted order is correct
-  // when we try to construct the expr from raw string
-  virtual auto Append(std::shared_ptr<Expr> expr) -> void = 0;
-  virtual auto Append(ExprKind type) -> void = 0;
+  auto Append(ExprKind type) -> void {
+    std::visit([type](auto &expr) { expr.Append(type); }, *this);
+  }
 
-  // Whether of not the Expr is completely built
-  [[nodiscard]] virtual auto Complete() const -> bool = 0;
-
-  virtual auto Accept(ExprVisitor &visitor) const -> void = 0;
-
-private:
-  ExprKind type_{ExprKind::kNull};
-  bool error_{false};
-
-  friend class Formula;
+  [[nodiscard]] auto Complete() -> bool {
+    return std::visit([](auto &expr) { return expr.Complete(); }, *this);
+  }
 };

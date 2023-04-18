@@ -27,7 +27,7 @@ auto Flatten(std::vector<Expr *> &flatten, std::vector<uint64_t> &parents,
     }
 
     ChildrenVisitor children_visitor;
-    flatten[i]->Accept(children_visitor);
+    std::visit(children_visitor, *flatten[i]);
 
     const auto &children = children_visitor.ViewChildren();
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
@@ -36,7 +36,7 @@ auto Flatten(std::vector<Expr *> &flatten, std::vector<uint64_t> &parents,
       to_merge.emplace_back();
 
       InfoVisitor info_visitor;
-      (*it)->Accept(info_visitor);
+      std::visit(info_visitor, **it);
 
       const auto type = (*it)->Type();
 
@@ -59,41 +59,46 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
 
     if (ExprKind::IsLiteral(flattened_type)) { // Literal => constructs literal
       InfoVisitor info_visitor;
-      flatten[i]->Accept(info_visitor);
+      std::visit(info_visitor, *flatten[i]);
+
       auto &infos = info_visitor.Infos();
       assert(infos.size() == 3);
       infos[1] = infos[1] == src ? dst : infos[1];
       infos[2] = infos[2] == src ? dst : infos[2];
-      to_merge[parents[i]].push_back(std::make_shared<PredicateLiteral>(
-          std::move(infos[0]), std::move(infos[1]), std::move(infos[2])));
+      to_merge[parents[i]].push_back(std::make_shared<Expr>(
+          std::in_place_type_t<PredicateLiteral>{}, std::move(infos[0]),
+          std::move(infos[1]), std::move(infos[2])));
       continue;
     }
 
     if (ExprKind::IsBinary(flattened_type)) { // Construct Binary
-      to_merge[parents[i]].push_back(std::make_shared<BinaryExpr>(
-          flattened_type, std::move(to_merge[i][0]),
-          std::move(to_merge[i][1])));
+      to_merge[parents[i]].push_back(std::make_shared<Expr>(
+          std::in_place_type_t<BinaryExpr>{}, flattened_type,
+          std::move(to_merge[i][0]), std::move(to_merge[i][1])));
       continue;
     }
 
     if (flattened_type == ExprKind::kExist ||
         flattened_type == ExprKind::kUniversal) { // Quantified Unary
       InfoVisitor info_visitor;
-      flatten[i]->Accept(info_visitor);
+      std::visit(info_visitor, *flatten[i]);
+
       auto &infos = info_visitor.Infos();
 
       if (infos[0] == src) { // if variable is re-bounded => DO a simple copy
         to_merge[parents[i]].push_back(std::move(to_merge[i][0]));
       } else { // otherwise => Construct Quantified Expr
-        to_merge[parents[i]].push_back(std::make_shared<QuantifiedUnaryExpr>(
-            flattened_type, std::move(infos[0]), std::move(to_merge[i][0])));
+        to_merge[parents[i]].push_back(std::make_shared<Expr>(
+            std::in_place_type_t<QuantifiedUnaryExpr>{}, flattened_type,
+            std::move(infos[0]), std::move(to_merge[i][0])));
       }
       continue;
     }
 
     if (flattened_type == ExprKind::kNeg) { // Negation => Construct UnaryExpr
-      to_merge[parents[i]].push_back(std::make_shared<UnaryExpr>(
-          flattened_type, std::move(to_merge[i][0])));
+      to_merge[parents[i]].push_back(
+          std::make_shared<Expr>(std::in_place_type_t<UnaryExpr>{},
+                                 flattened_type, std::move(to_merge[i][0])));
       continue;
     }
 
@@ -110,7 +115,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
   std::vector<std::vector<std::shared_ptr<Expr>>> to_merge{{}, {}};
 
   InfoVisitor info_visitor;
-  expr->Accept(info_visitor);
+  std::visit(info_visitor, *expr);
 
   const auto expr_type = expr->Type();
 
@@ -135,7 +140,8 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 [[nodiscard]] auto Expand(std::shared_ptr<Expr> expr, const Token &token)
     -> std::vector<std::vector<std::shared_ptr<Expr>>> {
   ChildrenVisitor children_visitor;
-  expr->Accept(children_visitor);
+  std::visit(children_visitor, *expr);
+
   auto &childrens = children_visitor.ViewChildren();
 
   const auto expr_type = expr->Type();
@@ -149,9 +155,9 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
   }
 
   if (expr_type == ExprKind::kImpl) { // Beta expansion
-    return {
-        {std::make_shared<UnaryExpr>(ExprKind::kNeg, std::move(childrens[0]))},
-        {std::move(childrens[1])}};
+    return {{std::make_shared<Expr>(std::in_place_type_t<UnaryExpr>{},
+                                    ExprKind::kNeg, std::move(childrens[0]))},
+            {std::move(childrens[1])}};
   }
 
   if (expr_type == ExprKind::kExist || expr_type == ExprKind::kUniversal) {
@@ -167,7 +173,8 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
         - Gamma will be added back in TryExpand
     */
     InfoVisitor info_visitor;
-    expr->Accept(info_visitor);
+    std::visit(info_visitor, *expr);
+
     return {{CopyAndReplace(info_visitor.Infos()[0], std::move(childrens[0]),
                             token)}};
   }
@@ -184,7 +191,8 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
     }
 
     ChildrenVisitor children_visitor_for_children;
-    children->Accept(children_visitor_for_children);
+    std::visit(children_visitor_for_children, *children);
+
     auto &children_of_children = children_visitor_for_children.ViewChildren();
 
     // If Unary
@@ -197,14 +205,17 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
     if (neg_expr_child_type == ExprKind::kExist ||
         neg_expr_child_type == ExprKind::kUniversal) {
       InfoVisitor info_visitor;
-      children->Accept(info_visitor);
+      std::visit(info_visitor, *children);
+
       auto &infos = info_visitor.Infos();
       assert(infos.size() == 1);
 
-      return {{std::make_shared<QuantifiedUnaryExpr>(
+      return {{std::make_shared<Expr>(
+          std::in_place_type_t<QuantifiedUnaryExpr>{},
           ExprKind::Negate(neg_expr_child_type), std::move(infos[0]),
-          std::make_shared<UnaryExpr>(ExprKind::kNeg,
-                                      std::move(children_of_children[0])))}};
+          std::make_shared<Expr>(std::in_place_type_t<UnaryExpr>{},
+                                 ExprKind::kNeg,
+                                 std::move(children_of_children[0])))}};
     }
 
     // If Binary => we negate them based on their rules
@@ -212,11 +223,14 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
       auto new_children_left =
           neg_expr_child_type == ExprKind::kImpl
               ? std::move(children_of_children[0])
-              : std::make_shared<UnaryExpr>(ExprKind::kNeg,
-                                            std::move(children_of_children[0]));
-      auto new_children_right = std::make_shared<UnaryExpr>(
-          ExprKind::kNeg, std::move(children_of_children[1]));
-      std::shared_ptr<Expr> node = std::make_shared<BinaryExpr>(
+              : std::make_shared<Expr>(std::in_place_type_t<UnaryExpr>{},
+                                       ExprKind::kNeg,
+                                       std::move(children_of_children[0]));
+      auto new_children_right = std::make_shared<Expr>(
+          std::in_place_type_t<UnaryExpr>{}, ExprKind::kNeg,
+          std::move(children_of_children[1]));
+      std::shared_ptr<Expr> node = std::make_shared<Expr>(
+          std::in_place_type_t<BinaryExpr>{},
           ExprKind::Negate(neg_expr_child_type), std::move(new_children_left),
           std::move(new_children_right));
       return {{std::move(node)}};

@@ -36,7 +36,7 @@ auto LiteralDescription(const Expr *expr, std::string &out, uint64_t num)
     -> void {
   if (num == 0) {
     InfoVisitor visitor;
-    expr->Accept(visitor);
+    std::visit(visitor, *expr);
 
     const auto &infos = visitor.Infos();
     out += infos[0].ToString();
@@ -53,7 +53,7 @@ auto UnaryDescription(const Expr *expr, std::string &out, uint64_t num)
     out += TypeToString(type);
     if (type == ExprKind::kExist || type == ExprKind::kUniversal) {
       InfoVisitor visitor;
-      expr->Accept(visitor);
+      std::visit(visitor, *expr);
       out += visitor.Infos()[0].ToString();
     }
   }
@@ -94,7 +94,7 @@ auto ExpandLeft(std::stack<std::pair<Expr *, uint64_t>> &stack,
     stack.emplace(expr, 1);
 
     ChildrenVisitor children_visitor;
-    expr->Accept(children_visitor);
+    std::visit(children_visitor, *expr);
 
     switch (children_visitor.ChildrenSize()) {
     case 0:
@@ -136,7 +136,7 @@ auto Formula::Description() const -> std::string {
     ::Description(expr, out, num);
 
     ChildrenVisitor children_visitor;
-    expr->Accept(children_visitor);
+    std::visit(children_visitor, *expr);
 
     // Only BinaryExpr falls into this case
     // because it has ChildrenSize == 2
@@ -151,7 +151,8 @@ auto Formula::Description() const -> std::string {
 
 auto Formula::ViewChildren() const -> std::vector<Formula> {
   ChildrenVisitor children_visitor;
-  expr_->Accept(children_visitor);
+  std::visit(children_visitor, *expr_);
+
   std::vector<Formula> ret;
   ret.reserve(children_visitor.ChildrenSize());
   for (auto &expr : children_visitor.ViewChildren()) {
@@ -180,7 +181,8 @@ Formula::~Formula() {
     const auto front = std::move(destruct_queue[i]);
     if (front.use_count() == 1) {
       ChildrenVisitor children_visitor;
-      front->Accept(children_visitor);
+      std::visit(children_visitor, *front);
+
       for (auto &expr : children_visitor.ViewChildren()) {
         destruct_queue.push_back(std::move(expr));
       }

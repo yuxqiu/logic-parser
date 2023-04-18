@@ -7,25 +7,23 @@
 #include "exprs/literal.hh"
 #include "exprs/unary.hh"
 
-#include "expr_visitor.hh"
-
-class ChildrenVisitor final : public ExprVisitor {
+class ChildrenVisitor {
 public:
-  auto Visit(const Literal &literal) -> void final { (void)literal; }
+  auto operator()(const Literal &literal) -> void { (void)literal; }
 
-  auto Visit(const PredicateLiteral &predicate) -> void final {
+  auto operator()(const PredicateLiteral &predicate) -> void {
     (void)predicate;
   }
 
-  auto Visit(const UnaryExpr &unary) -> void final {
+  auto operator()(const UnaryExpr &unary) -> void {
     children_.push_back(unary.expr_);
   }
 
-  auto Visit(const QuantifiedUnaryExpr &quantified) -> void final {
+  auto operator()(const QuantifiedUnaryExpr &quantified) -> void {
     children_.push_back(quantified.expr_);
   }
 
-  auto Visit(const BinaryExpr &binary) -> void final {
+  auto operator()(const BinaryExpr &binary) -> void {
     children_.push_back(binary.expr_lhs_);
     children_.push_back(binary.expr_rhs_);
   }

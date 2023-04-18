@@ -3,6 +3,7 @@
 #include <cassert>
 #include <memory>
 #include <stack>
+#include <utility>
 
 #include "exprs/binary.hh"
 #include "exprs/expr.hh"
@@ -47,7 +48,7 @@ public:
   using std::stack<std::shared_ptr<Expr>>::empty;
   using std::stack<std::shared_ptr<Expr>>::top;
   using std::stack<std::shared_ptr<Expr>>::pop;
-  using std::stack<std::shared_ptr<Expr>>::emplace;
+  using std::stack<std::shared_ptr<Expr>>::push;
 
   ExprStack() = default;
   ~ExprStack() {
@@ -84,7 +85,7 @@ auto Merge(ExprStack &stack) -> void {
   } else {
     stack.top()->Append(expr);
     if (stack.top()->Error()) {
-      stack.emplace(std::move(expr));
+      stack.push(std::move(expr));
       stack.SetError();
     }
   }
@@ -103,7 +104,7 @@ auto ProcessLeftParenthesis(ExprStack &stack, Tokenizer &tokenizer,
   (void)tokenizer;
   (void)token;
   // If ( => a new BinaryExpr
-  stack.emplace(std::make_shared<BinaryExpr>());
+  stack.push(std::make_shared<Expr>(std::in_place_type_t<BinaryExpr>{}));
 }
 
 auto ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
@@ -158,14 +159,15 @@ auto ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer, Token &token)
                      return lhs.first == token;
                    })
           ->second;
-  stack.emplace(std::make_shared<UnaryExpr>(type));
+  stack.push(std::make_shared<Expr>(std::in_place_type_t<UnaryExpr>{}, type));
 }
 
 auto ProcessLiteralProp(ExprStack &stack, Tokenizer &tokenizer, Token &token)
     -> void {
   (void)tokenizer;
   // If Literal => create a new literal
-  stack.emplace(std::make_shared<Literal>(std::move(token)));
+  stack.push(std::make_shared<Expr>(std::in_place_type_t<Literal>{},
+                                    std::move(token)));
   MergeStack(stack);
 }
 
@@ -186,7 +188,8 @@ auto ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer, Token &token)
     return;
   }
 
-  stack.emplace(std::make_shared<QuantifiedUnaryExpr>(
+  stack.push(std::make_shared<Expr>(
+      std::in_place_type_t<QuantifiedUnaryExpr>{},
       std::find_if(kUnaryPredicateToType.begin(), kUnaryPredicateToType.end(),
                    [&token](const std::pair<Token, ExprKind> &lhs) {
                      return lhs.first == token;
@@ -227,9 +230,9 @@ auto ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
     return;
   }
 
-  stack.emplace(std::make_shared<PredicateLiteral>(std::move(token),
-                                                   std::move(token_holder[1]),
-                                                   std::move(token_holder[3])));
+  stack.push(std::make_shared<Expr>(
+      std::in_place_type_t<PredicateLiteral>{}, std::move(token),
+      std::move(token_holder[1]), std::move(token_holder[3])));
   MergeStack(stack);
 }
 } // namespace
