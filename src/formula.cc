@@ -11,22 +11,22 @@
 #include "visitor/info_visitor.hh"
 
 namespace {
-auto TypeToString(enum Expr::Type type) -> std::string {
+auto TypeToString(ExprKind type) -> std::string {
   switch (type) {
-  case Expr::Type::kAnd:
+  case ExprKind::kAnd:
     return "^";
-  case Expr::Type::kOr:
+  case ExprKind::kOr:
     return "v";
-  case Expr::Type::kImpl:
+  case ExprKind::kImpl:
     return ">";
-  case Expr::Type::kNeg:
+  case ExprKind::kNeg:
     return "-";
-  case Expr::Type::kExist:
+  case ExprKind::kExist:
     return "E";
-  case Expr::Type::kUniversal:
+  case ExprKind::kUniversal:
     return "A";
-  case Expr::Type::kNull:
-  case Expr::Type::kLiteral:
+  case ExprKind::kNull:
+  case ExprKind::kLiteral:
     break;
   }
   unreachable();
@@ -51,7 +51,7 @@ auto UnaryDescription(const Expr *expr, std::string &out, uint64_t num)
   if (num == 0) {
     const auto type = expr->Type();
     out += TypeToString(type);
-    if (type == Expr::Type::kExist || type == Expr::Type::kUniversal) {
+    if (type == ExprKind::kExist || type == ExprKind::kUniversal) {
       InfoVisitor visitor;
       expr->Accept(visitor);
       out += visitor.Infos()[0].ToString();
@@ -72,11 +72,11 @@ auto BinaryDescription(const Expr *expr, std::string &out, uint64_t num)
 
 auto Description(const Expr *expr, std::string &out, uint64_t num) -> void {
   const auto type = expr->Type();
-  if (Expr::IsBinary(type)) {
+  if (ExprKind::IsBinary(type)) {
     BinaryDescription(expr, out, num);
-  } else if (Expr::IsUnary(type)) {
+  } else if (ExprKind::IsUnary(type)) {
     UnaryDescription(expr, out, num);
-  } else if (Expr::IsLiteral(type)) {
+  } else if (ExprKind::IsLiteral(type)) {
     LiteralDescription(expr, out, num);
   }
 }

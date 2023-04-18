@@ -11,7 +11,7 @@ auto BinaryExpr::Append(std::shared_ptr<Expr> expr) -> void {
     return;
   }
 
-  if (Type() == Type::kNull) {
+  if (Type() == ExprKind::kNull) {
     SetError();
     return;
   }
@@ -19,8 +19,8 @@ auto BinaryExpr::Append(std::shared_ptr<Expr> expr) -> void {
   expr_rhs_ = std::move(expr);
 }
 
-auto BinaryExpr::Append(enum Type type) -> void {
-  if (Type() != Type::kNull || !expr_lhs_ || !IsBinary(type)) {
+auto BinaryExpr::Append(ExprKind type) -> void {
+  if (Type() != ExprKind::kNull || !expr_lhs_ || !ExprKind::IsBinary(type)) {
     SetError();
     return;
   }

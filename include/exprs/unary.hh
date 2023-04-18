@@ -3,8 +3,8 @@
 #include "exprs/expr.hh"
 
 struct UnaryExpr : public Expr {
-  explicit UnaryExpr(enum Type type) : Expr(type) {}
-  explicit UnaryExpr(enum Type type, std::shared_ptr<Expr> expr)
+  explicit UnaryExpr(ExprKind type) : Expr(type) {}
+  explicit UnaryExpr(ExprKind type, std::shared_ptr<Expr> expr)
       : Expr(type), expr_(std::move(expr)) {}
 
   auto Append(std::shared_ptr<Expr> expr) -> void final {
@@ -16,13 +16,13 @@ struct UnaryExpr : public Expr {
     expr_ = std::move(expr);
   }
 
-  auto Append(enum Type type) -> void final {
+  auto Append(ExprKind type) -> void final {
     (void)type;
     SetError();
   }
 
   [[nodiscard]] auto Complete() const -> bool final {
-    return Type() != Type::kNull && expr_;
+    return Type() != ExprKind::kNull && expr_;
   }
 
   auto Accept(ExprVisitor &visitor) const -> void override {
@@ -36,9 +36,9 @@ struct UnaryExpr : public Expr {
 // Need to handle this case (by checking an additional Token)
 struct QuantifiedUnaryExpr final : public UnaryExpr {
 public:
-  explicit QuantifiedUnaryExpr(enum Type type, Token var)
+  explicit QuantifiedUnaryExpr(ExprKind type, Token var)
       : UnaryExpr(type), var_(std::move(var)) {}
-  explicit QuantifiedUnaryExpr(enum Type type, Token var,
+  explicit QuantifiedUnaryExpr(ExprKind type, Token var,
                                std::shared_ptr<Expr> expr)
       : UnaryExpr(type, std::move(expr)), var_(std::move(var)) {}
 

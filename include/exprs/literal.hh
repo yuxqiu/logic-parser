@@ -3,14 +3,15 @@
 #include "exprs/expr.hh"
 
 struct Literal : public Expr {
-  explicit Literal(Token val) : Expr(Type::kLiteral), val_{std::move(val)} {}
+  explicit Literal(Token val)
+      : Expr(ExprKind::kLiteral), val_{std::move(val)} {}
 
   auto Append(std::shared_ptr<Expr> expr) -> void final {
     (void)expr;
     SetError();
   }
 
-  auto Append(enum Type type) -> void final {
+  auto Append(ExprKind type) -> void final {
     (void)type;
     SetError();
   }

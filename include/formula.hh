@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "exprs/expr.hh"
+#include "exprs/kind.hh"
 #include "formula.hh"
 
 /*
@@ -21,7 +22,7 @@ public:
   auto operator=(const Formula &) -> Formula & = default;
   auto operator=(Formula &&) -> Formula & = default;
 
-  [[nodiscard]] auto Type() const -> enum Expr::Type { return expr_->Type(); }
+  [[nodiscard]] auto Type() const -> ExprKind { return expr_->Type(); }
 
   [[nodiscard]] auto Description() const -> std::string;
 

@@ -18,13 +18,13 @@ const std::array kLeftParenthesisAll = {Token{"("}};
 const std::array kRightParenthesisAll = {Token{")"}};
 
 const std::array kBinaryAll = {Token{"^"}, Token{"v"}, Token{">"}};
-const std::array kBinaryAllToType = {std::pair{Token{"^"}, Expr::Type::kAnd},
-                                     std::pair{Token{"v"}, Expr::Type::kOr},
-                                     std::pair{Token{">"}, Expr::Type::kImpl}};
+const std::array kBinaryAllToType = {std::pair{Token{"^"}, ExprKind::kAnd},
+                                     std::pair{Token{"v"}, ExprKind::kOr},
+                                     std::pair{Token{">"}, ExprKind::kImpl}};
 
 // Prop Starts
 const std::array kUnaryProp = {Token{"-"}};
-const std::array kUnaryPropToType = {std::pair{Token{"-"}, Expr::Type::kNeg}};
+const std::array kUnaryPropToType = {std::pair{Token{"-"}, ExprKind::kNeg}};
 
 const std::array kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
                                  Token{"s"}};
@@ -33,8 +33,8 @@ const std::array kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
 // Predicate Starts
 const std::array kUnaryPredicate = {Token{"E"}, Token{"A"}};
 const std::array kUnaryPredicateToType = {
-    std::pair{Token{"E"}, Expr::Type::kExist},
-    std::pair{Token{"A"}, Expr::Type::kUniversal}};
+    std::pair{Token{"E"}, ExprKind::kExist},
+    std::pair{Token{"A"}, ExprKind::kUniversal}};
 
 const std::array kLiteralPredicate = {Token{"P"}, Token{"Q"}, Token{"R"},
                                       Token{"S"}};
@@ -93,7 +93,7 @@ auto Merge(ExprStack &stack) -> void {
 auto MergeStack(ExprStack &stack) -> void {
   Merge(stack);
   while (!stack.empty() && !stack.Error() &&
-         !Expr::IsBinary(stack.top()->Type()) && stack.top()->Complete()) {
+         !ExprKind::IsBinary(stack.top()->Type()) && stack.top()->Complete()) {
     Merge(stack);
   }
 }
@@ -115,7 +115,7 @@ auto ProcessRightParenthesis(ExprStack &stack, Tokenizer &tokenizer,
   //  - stack.top is not Complete
   //  - stack.top.type is not Binary Expr
   if (stack.empty() || !stack.top()->Complete() ||
-      !Expr::IsBinary(stack.top()->Type())) {
+      !ExprKind::IsBinary(stack.top()->Type())) {
     stack.SetError();
     return;
   }
@@ -135,9 +135,9 @@ auto ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
     return;
   }
 
-  const enum Expr::Type type =
+  const ExprKind type =
       std::find_if(kBinaryAllToType.begin(), kBinaryAllToType.end(),
-                   [&token](const std::pair<Token, enum Expr::Type> &lhs) {
+                   [&token](const std::pair<Token, ExprKind> &lhs) {
                      return lhs.first == token;
                    })
           ->second;
@@ -152,9 +152,9 @@ auto ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer, Token &token)
     -> void {
   (void)tokenizer;
   // If UnaryProp (-) => create a new Unary Expr
-  const enum Expr::Type type =
+  const ExprKind type =
       std::find_if(kUnaryPropToType.begin(), kUnaryPropToType.end(),
-                   [&token](const std::pair<Token, enum Expr::Type> &lhs) {
+                   [&token](const std::pair<Token, ExprKind> &lhs) {
                      return lhs.first == token;
                    })
           ->second;
@@ -188,7 +188,7 @@ auto ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer, Token &token)
 
   stack.emplace(std::make_shared<QuantifiedUnaryExpr>(
       std::find_if(kUnaryPredicateToType.begin(), kUnaryPredicateToType.end(),
-                   [&token](const std::pair<Token, enum Expr::Type> &lhs) {
+                   [&token](const std::pair<Token, ExprKind> &lhs) {
                      return lhs.first == token;
                    })
           ->second,

@@ -40,7 +40,7 @@ auto Flatten(std::vector<Expr *> &flatten, std::vector<uint64_t> &parents,
 
       const auto type = (*it)->Type();
 
-      if ((type == Expr::Type::kExist || type == Expr::Type::kUniversal) &&
+      if ((type == ExprKind::kExist || type == ExprKind::kUniversal) &&
           info_visitor.Infos()[0] == src) {
         // If var is bounded by new quantifier, store it to to_merge directly
         // we will then merge it by checking the same condition
@@ -57,7 +57,7 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
   for (auto i = to_merge.size() - 1; i > 0; --i) {
     const auto flattened_type = flatten[i]->Type();
 
-    if (Expr::IsLiteral(flattened_type)) { // Literal => constructs literal
+    if (ExprKind::IsLiteral(flattened_type)) { // Literal => constructs literal
       InfoVisitor info_visitor;
       flatten[i]->Accept(info_visitor);
       auto &infos = info_visitor.Infos();
@@ -69,15 +69,15 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
       continue;
     }
 
-    if (Expr::IsBinary(flattened_type)) { // Construct Binary
+    if (ExprKind::IsBinary(flattened_type)) { // Construct Binary
       to_merge[parents[i]].push_back(std::make_shared<BinaryExpr>(
           flattened_type, std::move(to_merge[i][0]),
           std::move(to_merge[i][1])));
       continue;
     }
 
-    if (flattened_type == Expr::Type::kExist ||
-        flattened_type == Expr::Type::kUniversal) { // Quantified Unary
+    if (flattened_type == ExprKind::kExist ||
+        flattened_type == ExprKind::kUniversal) { // Quantified Unary
       InfoVisitor info_visitor;
       flatten[i]->Accept(info_visitor);
       auto &infos = info_visitor.Infos();
@@ -91,7 +91,7 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
       continue;
     }
 
-    if (flattened_type == Expr::Type::kNeg) { // Negation => Construct UnaryExpr
+    if (flattened_type == ExprKind::kNeg) { // Negation => Construct UnaryExpr
       to_merge[parents[i]].push_back(std::make_shared<UnaryExpr>(
           flattened_type, std::move(to_merge[i][0])));
       continue;
@@ -114,8 +114,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 
   const auto expr_type = expr->Type();
 
-  if ((expr_type == Expr::Type::kExist ||
-       expr_type == Expr::Type::kUniversal) &&
+  if ((expr_type == ExprKind::kExist || expr_type == ExprKind::kUniversal) &&
       info_visitor.Infos()[0] == src) {
     // If var is bounded by new quantifier, store it to to_merge directly
     // we will then merge it by checking the same condition
@@ -141,21 +140,21 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 
   const auto expr_type = expr->Type();
 
-  if (expr_type == Expr::Type::kAnd) { // Alpha expansion
+  if (expr_type == ExprKind::kAnd) { // Alpha expansion
     return {std::move(childrens)};
   }
 
-  if (expr_type == Expr::Type::kOr) { // Beta expansion
+  if (expr_type == ExprKind::kOr) { // Beta expansion
     return {{std::move(childrens[0])}, {std::move(childrens[1])}};
   }
 
-  if (expr_type == Expr::Type::kImpl) { // Beta expansion
-    return {{std::make_shared<UnaryExpr>(Expr::Type::kNeg,
-                                         std::move(childrens[0]))},
-            {std::move(childrens[1])}};
+  if (expr_type == ExprKind::kImpl) { // Beta expansion
+    return {
+        {std::make_shared<UnaryExpr>(ExprKind::kNeg, std::move(childrens[0]))},
+        {std::move(childrens[1])}};
   }
 
-  if (expr_type == Expr::Type::kExist || expr_type == Expr::Type::kUniversal) {
+  if (expr_type == ExprKind::kExist || expr_type == ExprKind::kUniversal) {
     // Delta/Gamma expansion
     /*
       1. Copy every node that needs to be copied
@@ -173,14 +172,14 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
                             token)}};
   }
 
-  if (expr_type == Expr::Type::kNeg) {
+  if (expr_type == ExprKind::kNeg) {
     std::shared_ptr<Expr> children = std::move(childrens[0]);
 
     const auto neg_expr_child_type = children->Type();
 
     // If we are negating literal, we return Neg+Literal
     // by the definition of literals in Tableau
-    if (neg_expr_child_type == Expr::Type::kLiteral) {
+    if (neg_expr_child_type == ExprKind::kLiteral) {
       return {{std::move(expr)}};
     }
 
@@ -190,35 +189,35 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 
     // If Unary
     // If Neg, we skip the double Negation
-    if (neg_expr_child_type == Expr::Type::kNeg) {
+    if (neg_expr_child_type == ExprKind::kNeg) {
       return {{std::move(children_of_children[0])}};
     }
 
     // Otherwise, we negate the Quantified Formula based on their rule
-    if (neg_expr_child_type == Expr::Type::kExist ||
-        neg_expr_child_type == Expr::Type::kUniversal) {
+    if (neg_expr_child_type == ExprKind::kExist ||
+        neg_expr_child_type == ExprKind::kUniversal) {
       InfoVisitor info_visitor;
       children->Accept(info_visitor);
       auto &infos = info_visitor.Infos();
       assert(infos.size() == 1);
 
       return {{std::make_shared<QuantifiedUnaryExpr>(
-          Expr::Negate(neg_expr_child_type), std::move(infos[0]),
-          std::make_shared<UnaryExpr>(Expr::Type::kNeg,
+          ExprKind::Negate(neg_expr_child_type), std::move(infos[0]),
+          std::make_shared<UnaryExpr>(ExprKind::kNeg,
                                       std::move(children_of_children[0])))}};
     }
 
     // If Binary => we negate them based on their rules
-    if (Expr::IsBinary(neg_expr_child_type)) {
+    if (ExprKind::IsBinary(neg_expr_child_type)) {
       auto new_children_left =
-          neg_expr_child_type == Expr::Type::kImpl
+          neg_expr_child_type == ExprKind::kImpl
               ? std::move(children_of_children[0])
-              : std::make_shared<UnaryExpr>(Expr::Type::kNeg,
+              : std::make_shared<UnaryExpr>(ExprKind::kNeg,
                                             std::move(children_of_children[0]));
       auto new_children_right = std::make_shared<UnaryExpr>(
-          Expr::Type::kNeg, std::move(children_of_children[1]));
+          ExprKind::kNeg, std::move(children_of_children[1]));
       std::shared_ptr<Expr> node = std::make_shared<BinaryExpr>(
-          Expr::Negate(neg_expr_child_type), std::move(new_children_left),
+          ExprKind::Negate(neg_expr_child_type), std::move(new_children_left),
           std::move(new_children_right));
       return {{std::move(node)}};
     }
@@ -233,7 +232,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
   Token token;
   const auto type = Type();
 
-  if (type == Expr::Type::kUniversal) {
+  if (type == ExprKind::kUniversal) {
     /*
       if Universal Formula => we need to get a constant based on
         - the number of constants used by the Formula
@@ -245,7 +244,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
     }
     ++const_num_;
     token = std::move(requested_const.value());
-  } else if (type == Expr::Type::kExist) {
+  } else if (type == ExprKind::kExist) {
     /*
       if Existential Formula => we need to add a constant to the list based on
         - the availability of the constant manager
@@ -281,7 +280,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool {
   const auto lhs_type = lhs.Type();
   const auto rhs_type = rhs.Type();
-  if (lhs_type == rhs_type && lhs_type == Expr::Type::kUniversal) {
+  if (lhs_type == rhs_type && lhs_type == ExprKind::kUniversal) {
     return lhs.const_num_ > rhs.const_num_;
   }
   return lhs_type > rhs_type;
@@ -293,7 +292,7 @@ auto operator>(const TableauFormula &lhs, const TableauFormula &rhs) -> bool {
 auto Theory::Append(const TableauFormula &formula) -> void {
   const auto formula_type = formula.Type();
 
-  if (Expr::IsLiteral(
+  if (ExprKind::IsLiteral(
           formula_type)) { // if tableau literal => literal or neg_literal
     // use description to deal with prop literal and pred literal
     auto literal = formula.Description();
@@ -305,8 +304,8 @@ auto Theory::Append(const TableauFormula &formula) -> void {
     return;
   }
 
-  if (formula_type == Expr::Type::kNeg &&
-      Expr::IsLiteral(formula.ViewChildren()[0].Type())) {
+  if (formula_type == ExprKind::kNeg &&
+      ExprKind::IsLiteral(formula.ViewChildren()[0].Type())) {
     auto literal = formula.ViewChildren()[0].Description();
     if (literals_.find(Token{literal}) != literals_.end()) {
       close_ = true;
@@ -347,7 +346,7 @@ auto Theory::TryExpand() -> std::vector<Theory> {
     In the second case, we need to mark our theory as undecidable
   */
   if (expansions.empty()) {
-    if (formula_type == Expr::Type::kExist) {
+    if (formula_type == ExprKind::kExist) {
       undecidable_ = true;
     }
     return {};
@@ -363,7 +362,7 @@ auto Theory::TryExpand() -> std::vector<Theory> {
     }
 
     // Gamma formula needs to be added back to the Theory
-    if (formula_type == Expr::Type::kUniversal) {
+    if (formula_type == ExprKind::kUniversal) {
       new_theory.Append(formula);
     }
 
