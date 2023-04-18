@@ -155,7 +155,7 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
   expr_->Accept(children_visitor);
   std::vector<Formula> ret;
   ret.reserve(children_visitor.ChildrenSize());
-  for (auto &&expr : children_visitor.ViewChildren()) {
+  for (auto &expr : children_visitor.ViewChildren()) {
     ret.emplace_back(std::move(expr));
   }
   return ret;
@@ -174,15 +174,16 @@ auto Formula::ViewChildren() const -> std::vector<Formula> {
 */
 Formula::~Formula() {
   std::vector<std::shared_ptr<Expr>> destruct_queue;
-  destruct_queue.emplace_back(std::move(expr_));
+  destruct_queue.push_back(std::move(expr_));
+
   for (decltype(destruct_queue)::size_type i = 0; i < destruct_queue.size();
        ++i) {
     const auto front = std::move(destruct_queue[i]);
     if (front.use_count() == 1) {
       ChildrenVisitor children_visitor;
       front->Accept(children_visitor);
-      for (auto &&expr : children_visitor.ViewChildren()) {
-        destruct_queue.emplace_back(std::move(expr));
+      for (auto &expr : children_visitor.ViewChildren()) {
+        destruct_queue.push_back(std::move(expr));
       }
     }
   }

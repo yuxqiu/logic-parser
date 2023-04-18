@@ -18,16 +18,16 @@ public:
   }
 
   auto Visit(const UnaryExpr &unary) -> void final {
-    children_.emplace_back(unary.expr_);
+    children_.push_back(unary.expr_);
   }
 
   auto Visit(const QuantifiedUnaryExpr &quantified) -> void final {
-    children_.emplace_back(quantified.expr_);
+    children_.push_back(quantified.expr_);
   }
 
   auto Visit(const BinaryExpr &binary) -> void final {
-    children_.emplace_back(binary.expr_lhs_);
-    children_.emplace_back(binary.expr_rhs_);
+    children_.push_back(binary.expr_lhs_);
+    children_.push_back(binary.expr_rhs_);
   }
 
   auto ChildrenSize() -> std::vector<std::shared_ptr<Expr>>::size_type {

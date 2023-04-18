@@ -12,6 +12,8 @@
 
 class TableauFormula final : public Formula {
 public:
+  using Formula::Formula;
+
   explicit TableauFormula(const Formula &formula);
 
   [[nodiscard]] auto Expand(ConstantManager &manager)

@@ -30,8 +30,8 @@ auto Flatten(std::vector<Expr *> &flatten, std::vector<uint64_t> &parents,
 
     const auto &children = children_visitor.ViewChildren();
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
-      flatten.emplace_back(it->get());
-      parents.emplace_back(i);
+      flatten.push_back(it->get());
+      parents.push_back(i);
       to_merge.emplace_back();
 
       InfoVisitor info_visitor;
@@ -42,7 +42,7 @@ auto Flatten(std::vector<Expr *> &flatten, std::vector<uint64_t> &parents,
           info_visitor.Infos()[0] == src) {
         // If var is bounded by new quantifier, store it to to_merge directly
         // we will then merge it by checking the same condition
-        to_merge.back().emplace_back(*it);
+        to_merge.back().push_back(*it);
       }
     }
   }
@@ -56,17 +56,17 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
     if (Expr::IsLiteral(flatten[i]->Type())) { // Literal => constructs literal
       InfoVisitor info_visitor;
       flatten[i]->Accept(info_visitor);
-      auto &&infos = info_visitor.Infos();
+      auto &infos = info_visitor.Infos();
       assert(infos.size() == 3);
       infos[1] = infos[1] == src ? dst : infos[1];
       infos[2] = infos[2] == src ? dst : infos[2];
-      to_merge[parents[i]].emplace_back(std::make_shared<PredicateLiteral>(
+      to_merge[parents[i]].push_back(std::make_shared<PredicateLiteral>(
           std::move(infos[0]), std::move(infos[1]), std::move(infos[2])));
       continue;
     }
 
     if (Expr::IsBinary(flatten[i]->Type())) { // Construct Binary
-      to_merge[parents[i]].emplace_back(std::make_shared<BinaryExpr>(
+      to_merge[parents[i]].push_back(std::make_shared<BinaryExpr>(
           flatten[i]->Type(), std::move(to_merge[i][0]),
           std::move(to_merge[i][1])));
       continue;
@@ -76,12 +76,12 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
         flatten[i]->Type() == Expr::Type::kUniversal) { // Quantified Unary
       InfoVisitor info_visitor;
       flatten[i]->Accept(info_visitor);
-      auto &&infos = info_visitor.Infos();
+      auto &infos = info_visitor.Infos();
 
       if (infos[0] == src) { // if variable is re-bounded => DO a simple copy
-        to_merge[parents[i]].emplace_back(std::move(to_merge[i][0]));
+        to_merge[parents[i]].push_back(std::move(to_merge[i][0]));
       } else { // otherwise => Construct Quantified Expr
-        to_merge[parents[i]].emplace_back(std::make_shared<QuantifiedUnaryExpr>(
+        to_merge[parents[i]].push_back(std::make_shared<QuantifiedUnaryExpr>(
             flatten[i]->Type(), std::move(infos[0]),
             std::move(to_merge[i][0])));
       }
@@ -90,7 +90,7 @@ auto Merge(const Token &src, std::vector<Expr *> &flatten,
 
     if (flatten[i]->Type() ==
         Expr::Type::kNeg) { // Negation => Construct UnaryExpr
-      to_merge[parents[i]].emplace_back(std::make_shared<UnaryExpr>(
+      to_merge[parents[i]].push_back(std::make_shared<UnaryExpr>(
           flatten[i]->Type(), std::move(to_merge[i][0])));
       continue;
     }
@@ -115,7 +115,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
       info_visitor.Infos()[0] == src) {
     // If var is bounded by new quantifier, store it to to_merge directly
     // we will then merge it by checking the same condition
-    to_merge[1].emplace_back(expr);
+    to_merge[1].push_back(std::move(expr));
   }
 
   // Flatten the AST
@@ -133,7 +133,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
     -> std::vector<std::vector<std::shared_ptr<Expr>>> {
   ChildrenVisitor children_visitor;
   expr->Accept(children_visitor);
-  auto &&childrens = children_visitor.ViewChildren();
+  auto &childrens = children_visitor.ViewChildren();
 
   const auto expr_type = expr->Type();
 
@@ -182,7 +182,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
 
     ChildrenVisitor children_visitor_for_children;
     children->Accept(children_visitor_for_children);
-    auto &&children_of_children = children_visitor_for_children.ViewChildren();
+    auto &children_of_children = children_visitor_for_children.ViewChildren();
 
     // If Unary
     // If Neg, we skip the double Negation
@@ -195,7 +195,7 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
         neg_expr_child_type == Expr::Type::kUniversal) {
       InfoVisitor info_visitor;
       children->Accept(info_visitor);
-      auto &&infos = info_visitor.Infos();
+      auto &infos = info_visitor.Infos();
       assert(infos.size() == 1);
 
       return {{std::make_shared<QuantifiedUnaryExpr>(
@@ -265,10 +265,10 @@ auto CopyAndReplace(const Token &src, std::shared_ptr<Expr> expr,
   for (auto &one_expansion : expansion) {
     std::vector<TableauFormula> formulas;
     formulas.reserve(one_expansion.size());
-    for (auto &&new_formula : one_expansion) {
-      formulas.emplace_back(Formula{std::move(new_formula)});
+    for (auto &new_formula : one_expansion) {
+      formulas.emplace_back(std::move(new_formula));
     }
-    ret.emplace_back(std::move(formulas));
+    ret.push_back(std::move(formulas));
   }
 
   return ret;
@@ -359,7 +359,7 @@ auto Theory::TryExpand() -> std::vector<Theory> {
       new_theory.Append(formula);
     }
 
-    new_theories.emplace_back(std::move(new_theory));
+    new_theories.push_back(std::move(new_theory));
   }
 
   return new_theories;
@@ -367,7 +367,7 @@ auto Theory::TryExpand() -> std::vector<Theory> {
 
 auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
   std::vector<Theory> queue;
-  queue.emplace_back(TableauFormula{parser_out.GetFormula()});
+  queue.emplace_back(TableauFormula(parser_out.GetFormula()));
 
   bool undecidable{
       false}; // to mark whether we have encountered undecidable formula
@@ -392,9 +392,9 @@ auto Tableau::Solve(const Parser::ParserOutput &parser_out) -> TableauResult {
       return TableauResult::kSatisfiable;
     }
 
-    for (auto &&new_theory : theories) {
+    for (auto &new_theory : theories) {
       if (!new_theory.Close()) {
-        queue.emplace_back(std::move(new_theory));
+        queue.push_back(std::move(new_theory));
       }
     }
   }

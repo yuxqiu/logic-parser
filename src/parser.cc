@@ -316,7 +316,7 @@ auto Parser::Parse(std::string line) -> ParserOutput {
       - top formula is not complete (missing symbol - incorrect syntax)
       - top formula is in error (unmatched symbol - incorrect syntax)
   */
-  auto &&expr = stack.Holder();
+  auto &expr = stack.Holder();
   if (stack.Error() || !stack.empty() || (proposition == predicate) || !expr) {
     return ParserOutput{{}, std::move(line), ParseResult::kNotAFormula};
   }
