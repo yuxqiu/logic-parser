@@ -1,58 +1,10 @@
-# logic-parser
+# logic-parser - v2-value
 
-This project implements a one-pass iterative parser and SAT solver for propositional and first-order logic.
-
-## Brief
-
-It can pass the propositional logic that follows the syntax shown below:
-
-$$
-\begin{align}
-    \text{Formula} &:= \text{Prop}\\
-            &\mid \neg \text{Formula}\\
-            &\mid \text{(Formula * Formula)}
-\end{align}
-$$
-
-where Prop can be p, q, r, s, and `*` can be `^/v/>` (and, or, implies). You can easily adjust the symbols and connectives it supports by changing `parser.cc`.
-
-The FOL syntax it supports is similar to the propositional syntax, except that we introduce variables `x, y, z, w`, existential and universal quantifier, and assume that all the predicates are binary.
-
-The exact syntax looks like this:
-
-$$
-\begin{align}
-    \text{Var} &:= x, y, z, w\\
-    \text{Pred} &:= P, Q, R, S\\
-    \text{Connective} &:= \text{\\\&, } \hat{\text{ }} \text{, >}\\
-    \text{Formula} &:= \text{Pred(Var, Var)}\\
-            &\mid \neg \text{Formula}\\
-            &\mid \text{E Var Formula } (\exists)\\
-            &\mid \text{A Var Formula } (\forall)\\
-            &\mid \text{(Formula Connective Formula)}
-\end{align}
-$$
-
-For the SAT solver, it's worth noting that when solving the SAT problem of FOL, the solver assumes that there are no free variables in the formula. Also, since the SAT problem of FOL is undecidable, the solver will try to add at most ten constants to the tableau. If it cannot solve the problem after adding these ten constants, it will output "may or may not be satisfiable". This behaviour can be adjusted in `constant.hh` (which manages the constant).
-
-
-## Iterative Parser
-
-Three main parts need to be implemented iteratively:
-- Construct the AST of the formula
-- Destruct the AST
-- Copy any subtree of the AST
-
-The second task is straightforward. It can be implemented by using a queue.
-
-The first task is also relatively simple. We only need to define the behaviours of our parser when we encounter different categories of characters. You can refer to the implementation in `parser.cc`.
-
-The third task is a bit tedious. The current implementation first flattens the tree into an array and then rebuilds the tree based on this array, which is not ideal in speed and can potentially be improved.
-
-
-## Test
-
-There are tests provided in the `tests` directory. You can compile the program by using `make release=1`. Then, launch the program by specifying the name of the test file `./bin/release/src/main.out ./tests/{filename}`.
+This branch attempts to replace virtual function calls by using `std::variant`.
+Compared to the `main` branch, the parser and SAT solver for this branch are slower.
+The main reason for this is the number of dynamic memory allocation it makes:
+using `std::variant` increases the amount of memory required, as we need to allocate enough memory to accommodate the largest member of the variant (i.e. `BinaryExpr`).
+This resulted in significant performance degradation, especially given that I mainly used `tests/large.txt` (containing only unary and literal expression) as input to the benchmark.
 
 
 ## Contributions
