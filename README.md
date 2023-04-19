@@ -6,6 +6,7 @@ The main reason for this is the number of dynamic memory allocation it makes:
 using `std::variant` increases the amount of memory required, as we need to allocate enough memory to accommodate the largest member of the variant (i.e. `BinaryExpr`).
 This resulted in significant performance degradation, especially given that I mainly used `tests/large.txt` (containing only unary and literal expression) as input to the benchmark.
 
+A potential improvement would be to define `Expr` as a variant of a shared pointer. This could reduce memory waste. Also, inside each expression, we can use `Expr` directly instead of using a shared pointer to Expr.
 
 ## Contributions
 
