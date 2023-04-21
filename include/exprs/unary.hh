@@ -34,13 +34,13 @@ public:
   }
 
   std::shared_ptr<Expr> expr_{};
-  ExprKind type_;
+  ExprKind type_ = ExprKind::kNull;
   bool error_ = false;
 };
 
 // A Special UnaryExpr Expr where E is a quantifier
 // Need to handle this case (by checking an additional Token)
-struct QuantifiedUnaryExpr final : public UnaryExpr {
+struct QuantifiedUnaryExpr final : UnaryExpr {
 public:
   explicit QuantifiedUnaryExpr(ExprKind type, Token var)
       : UnaryExpr(type), var_(std::move(var)) {}

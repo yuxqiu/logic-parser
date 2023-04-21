@@ -47,6 +47,6 @@ public:
   }
 
   std::shared_ptr<Expr> expr_lhs_{}, expr_rhs_{};
-  ExprKind type_;
+  ExprKind type_ = ExprKind::kNull;
   bool error_ = false;
 };
