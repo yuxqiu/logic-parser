@@ -2,12 +2,15 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 class Token {
 public:
   explicit Token() = default;
   explicit Token(std::string token) : token_{std::move(token)} {}
-  [[nodiscard]] auto ToString() const -> std::string { return token_; }
+
+  // because we want to be able to compare with string_view/string implicitly
+  [[nodiscard]] operator std::string_view() const { return token_; } // NOLINT
 
 private:
   std::string token_{};
@@ -24,7 +27,7 @@ private:
 namespace std {
 template <> struct hash<Token> {
   auto operator()(const Token &token) const -> size_t {
-    return hash<std::string>()(token.ToString());
+    return hash<std::string_view>()(std::string_view{token});
   }
 };
 } // namespace std

@@ -3,6 +3,7 @@
 #include <cassert>
 #include <memory>
 #include <stack>
+#include <string_view>
 #include <utility>
 
 #include "exprs/binary.hh"
@@ -14,33 +15,30 @@
 #include "tokenizer.hh"
 
 namespace {
+using namespace std::literals;
 // Basic Infos
-const std::array kLeftParenthesisAll = {Token{"("}};
-const std::array kRightParenthesisAll = {Token{")"}};
+constexpr std::array kLeftParenthesisAll = {"("sv};
+constexpr std::array kRightParenthesisAll = {")"sv};
 
-const std::array kBinaryAll = {Token{"^"}, Token{"v"}, Token{">"}};
-const std::array kBinaryAllToType = {std::pair{Token{"^"}, ExprKind::kAnd},
-                                     std::pair{Token{"v"}, ExprKind::kOr},
-                                     std::pair{Token{">"}, ExprKind::kImpl}};
+constexpr std::array kBinaryAll = {"^"sv, "v"sv, ">"sv};
+constexpr std::array kBinaryAllToType = {std::pair{"^"sv, ExprKind::kAnd},
+                                         std::pair{"v"sv, ExprKind::kOr},
+                                         std::pair{">"sv, ExprKind::kImpl}};
 
 // Prop Starts
-const std::array kUnaryProp = {Token{"-"}};
-const std::array kUnaryPropToType = {std::pair{Token{"-"}, ExprKind::kNeg}};
+constexpr std::array kUnaryProp = {"-"sv};
+constexpr std::array kUnaryPropToType = {std::pair{"-"sv, ExprKind::kNeg}};
 
-const std::array kLiteralProp = {Token{"p"}, Token{"q"}, Token{"r"},
-                                 Token{"s"}};
+constexpr std::array kLiteralProp = {"p"sv, "q"sv, "r"sv, "s"sv};
 // Prop Ends
 
 // Predicate Starts
-const std::array kUnaryPredicate = {Token{"E"}, Token{"A"}};
-const std::array kUnaryPredicateToType = {
-    std::pair{Token{"E"}, ExprKind::kExist},
-    std::pair{Token{"A"}, ExprKind::kUniversal}};
+constexpr std::array kUnaryPredicate = {"E"sv, "A"sv};
+constexpr std::array kUnaryPredicateToType = {
+    std::pair{"E"sv, ExprKind::kExist}, std::pair{"A"sv, ExprKind::kUniversal}};
 
-const std::array kLiteralPredicate = {Token{"P"}, Token{"Q"}, Token{"R"},
-                                      Token{"S"}};
-const std::array kVarPredicate = {Token{"x"}, Token{"y"}, Token{"z"},
-                                  Token{"w"}};
+constexpr std::array kLiteralPredicate = {"P"sv, "Q"sv, "R"sv, "S"sv};
+constexpr std::array kVarPredicate = {"x"sv, "y"sv, "z"sv, "w"sv};
 // Predicate Ends
 
 class ExprStack : std::stack<std::shared_ptr<Expr>> {
@@ -138,7 +136,7 @@ auto ProcessBinaryConnective(ExprStack &stack, Tokenizer &tokenizer,
 
   const ExprKind type =
       std::find_if(kBinaryAllToType.begin(), kBinaryAllToType.end(),
-                   [&token](const std::pair<Token, ExprKind> &lhs) {
+                   [&token](const std::pair<std::string_view, ExprKind> &lhs) {
                      return lhs.first == token;
                    })
           ->second;
@@ -155,7 +153,7 @@ auto ProcessUnaryProp(ExprStack &stack, Tokenizer &tokenizer, Token &token)
   // If UnaryProp (-) => create a new Unary Expr
   const ExprKind type =
       std::find_if(kUnaryPropToType.begin(), kUnaryPropToType.end(),
-                   [&token](const std::pair<Token, ExprKind> &lhs) {
+                   [&token](const std::pair<std::string_view, ExprKind> &lhs) {
                      return lhs.first == token;
                    })
           ->second;
@@ -191,7 +189,7 @@ auto ProcessUnaryPredicate(ExprStack &stack, Tokenizer &tokenizer, Token &token)
   stack.push(std::make_shared<Expr>(
       std::in_place_type_t<QuantifiedUnaryExpr>{},
       std::find_if(kUnaryPredicateToType.begin(), kUnaryPredicateToType.end(),
-                   [&token](const std::pair<Token, ExprKind> &lhs) {
+                   [&token](const std::pair<std::string_view, ExprKind> &lhs) {
                      return lhs.first == token;
                    })
           ->second,
@@ -215,8 +213,8 @@ auto ProcessLiteralPredicate(ExprStack &stack, Tokenizer &tokenizer,
     tokenizer.PopToken();
   }
 
-  if (!(token_holder[0] == Token{"("}) || !(token_holder[2] == Token{","}) ||
-      !(token_holder[4] == Token{")"})) {
+  if (!(token_holder[0] == "("sv) || !(token_holder[2] == ","sv) ||
+      !(token_holder[4] == ")"sv)) {
     stack.SetError();
     return;
   }
@@ -310,7 +308,6 @@ auto Parser::Parse(std::string line) -> ParserOutput {
     // no match
     stack.SetError();
   }
-
   /*
     if
       - stack is on error (the last action triggers error)

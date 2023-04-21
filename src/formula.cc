@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstddef>
 #include <stack>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -39,9 +40,11 @@ auto LiteralDescription(const Expr *expr, std::string &out, uint64_t num)
     std::visit(visitor, *expr);
 
     const auto &infos = visitor.Infos();
-    out += infos[0].ToString();
+    out += std::string_view{infos[0]};
     if (infos.size() == 3) {
-      out += "(" + infos[1].ToString() + "," + infos[2].ToString() + ")";
+      (out += "(") += std::string_view{infos[1]};
+      (out += +",") += std::string_view{infos[2]};
+      out += ")";
     }
   }
 }
@@ -54,7 +57,7 @@ auto UnaryDescription(const Expr *expr, std::string &out, uint64_t num)
     if (type == ExprKind::kExist || type == ExprKind::kUniversal) {
       InfoVisitor visitor;
       std::visit(visitor, *expr);
-      out += visitor.Infos()[0].ToString();
+      out += std::string_view{visitor.Infos()[0]};
     }
   }
 }
